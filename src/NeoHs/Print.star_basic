@@ -1,0 +1,199 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Option Explicit
+
+Sub Main
+
+End Sub
+
+'====================================================
+' Name        :  PlaatjesWelAfdrukken
+' Description :  Start to set print property of grapics
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub PlaatjesWelAfdrukken
+	SetPlaatjesProperty (TRUE, PsNPImagesPrefix, PsNPFramesPrefix)
+End Sub
+'====================================================
+' Name        :  PlaatjesNietAfdrukken
+' Description :  Start to set print property of grapics
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub PlaatjesNietAfdrukken
+	SetPlaatjesProperty (FALSE, PsNPImagesPrefix, PsNPFramesPrefix)
+End Sub
+'====================================================
+' Name        :  SetPlaatjesProperty 
+' Description :  Set property Print of graphic
+' Arguments   :  Boolean Print or Not / String start name graphics and frames
+' Returns     :  -
+'----------------------------------------------------
+Sub SetPlaatjesProperty (bPrint as Boolean, sNameStart$, sFrameNameStart$)
+	Dim oDrawPage, oGraphic
+	Dim nNum%, i%, nTransp%
+	Dim oFrames, oFrame
+
+	If ThisComponent.SupportsService("com.sun.star.text.TextDocument") Then	
+		oFrames = ThisComponent.getTextFrames  
+		nNum = oFrames.getCount()
+		For i = 0 To nNum - 1
+			oFrame = oFrames.getByIndex(i)
+			If left((oFrame.getName), len(sFrameNameStart)) = sFrameNameStart then
+				oFrame.print = bPrint
+			End if
+		Next
+	End If
+	
+	If ThisComponent.SupportsService("com.sun.star.text.TextDocument") Then	
+		oDrawPage = ThisComponent.getDrawPage()
+		nNum= oDrawPage.getCount()
+		For i = 0 To nNum - 1
+			oGraphic = oDrawPage.getByIndex(i)
+			If left((oGraphic.getName), len(sNameStart)) = sNameStart then
+				oGraphic.print = bPrint
+
+				If PbSetImageTransparent Then
+					If bPrint = True Then
+						oGraphic.Transparency = 0
+					Else
+						oGraphic.Transparency = 100
+					End If
+				End If
+			End if
+		Next
+	ElseIf ThisComponent.SupportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+		
+		If NOT bPrint then nTransp = 100
+		
+		oDrawPage = ThisComponent.getDrawPages().getByIndex(0) ' first one
+		nNum= oDrawPage.getCount()
+		For i = 0 To nNum - 1
+			oGraphic = oDrawPage.getByIndex(i)
+			If left((oGraphic.getName), len(sNameStart)) = sNameStart then
+'				xray  oGraphic
+				oGraphic.Transparency = nTransp
+			End if
+		Next
+	End If
+
+	'Option!		
+	'make sure that the doc is dirty!
+	'oDoc.setModified(True)
+	
+End Sub
+'====================================================
+' Name        :  ToonPrinterDialoog
+' Description :  Shows default printer dialog
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub ToonPrinterDialoog
+	Dim oDocFrame, oDispatchHelper
+	
+	oDocFrame = ThisComponent.getCurrentController().getFrame()
+   	oDispatchHelper = createUnoService( "com.sun.star.frame.DispatchHelper" )
+   	oDispatchHelper.executeDispatch( oDocFrame, ".uno:Print", "", 0, Array() )
+   	
+End Sub
+'====================================================
+' Name        :  PrintDirectZonderDialoog
+' Description :  Direct printing
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub PrintDirectZonderDialoog
+
+	ThisComponent.Print (Array())
+
+End Sub
+'====================================================
+' Name        :  SetPaperTrayForPageStyles
+' Description :  Sets paper tray for one or all page styles
+' Arguments   :  Document, Name of tray, Optional Name of page style
+' Returns     :  -
+'----------------------------------------------------
+Sub SetPaperTrayForPageStyles (oDoc, sTrayName$, Optional sPageStyle$)
+	Dim oPageStyles, oPageStyle
+	Dim i%
+	Dim bBeenHere as Boolean
+	
+On Error GoTo ErrorHandler
+
+	oPageStyles = oDoc.StyleFamilies.GetByName("PageStyles")
+	
+	If isMissing(sPageStyle) Then
+		' do all pages
+	 	For i = 1 to oPageStyles.getCount
+			oPageStyle = oPageStyles.GetByIndex(i-1)
+On error goto ErrorPaperTray
+	  		oPageStyle.PrinterPaperTray=sTrayName
+On Error GoTo ErrorHandler
+		Next i
+	Else
+		' just do the given page style
+		If oPageStyles.hasByName(sPageStyle) Then
+			oPageStyle = oPageStyles.getByName(sPageStyle)
+			oPageStyle.PrinterPaperTray=sTrayName
+		End If
+	End If
+Exit Sub
+ErrorPaperTray:
+	If Not bBeenHere Then
+		VariousErrorMessage(GetUIText("Pri_01a") & Chr(13) & GetUIText("Pri_01b"), 48)
+		bBeenHere = TRUE
+	End If
+	Resume Next
+	
+ErrorHandler:
+	MyErrMessenger("SetPaperTrayForPageStyles")	
+End Sub
+'====================================================
+' Name        :  EmailDirectAlsPDF
+' Description :  Starts uno service for emailing document as .PDF
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub EmailDirectAlsPDF
+	dim oDocFrame, oDispatcher
+	
+	oDocFrame = ThisComponent.CurrentController.Frame
+	oDispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+	oDispatcher.executeDispatch(oDocFrame, ".uno:SendMailDocAsPDF", "", 0, Array())
+
+End sub
+'====================================================
+' Name        :  EmailDirectAlsODF
+' Description :  Starts uno service for emailing document as .PDF
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub EmailDirectAlsODF
+	dim oDocFrame, oDispatcher
+	
+	oDocFrame = ThisComponent.CurrentController.Frame
+	oDispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+	oDispatcher.executeDispatch(oDocFrame, ".uno:SendMail", "", 0, Array())
+
+End sub
+'====================================================
+' Name        :  EmailDirectAsMSFormat
+' Description :  Starts uno service for emailing document as .doc or .xls
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub EmailDirectAsMSFormat
+	dim oDocFrame,  oDispatcher
+	
+	oDocFrame   = ThisComponent.CurrentController.Frame
+	oDispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+	oDispatcher.executeDispatch(oDocFrame, ".uno:SendMailDocAsMS", "", 0, Array())
+
+End sub
+'----------------------------------------------------
+

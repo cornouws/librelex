@@ -1,0 +1,382 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Option Explicit
+
+Public oClipContents 
+Public oClip
+Public oTRX
+Public sPlaceOnClipboard$
+
+Sub Main
+'Globalscope.BasicLibraries.LoadLibrary("XrayTool")
+StrtDocKeuzeVenster()
+'StartEditingDoc
+End Sub
+
+'====================================================
+' Name        :  InitVersionDialog
+' Description :  
+' Arguments   :  -
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function InitVersionDialog as Integer
+
+On Error GoTo ErrorHandler
+	'set dialog title
+
+	PoAnyDlg.setTitle(GetUIText("DiaA_40"))
+
+	PoAnyDlg.getControl("lblInfo").Text = GetUIText("DiaA_41") & SCOMPNAMEDISPLAYED & Chr(13) & Chr(13) &_
+		GetUIText("DiaA_42")  & SHS_VERSIE & Chr(13) & GetUIText("DiaA_43")	& SHS_DATUM & Chr(13) & Chr(13) &_
+		SCOPYRIGHTINFO & " " & GetUIText("DiaA_44")
+	PoAnyDlg.getControl("cmdControle").setLabel(GetUIText("DiaA_45"))
+	PoAnyDlg.getControl("cmdClose").setLabel(GetUIText("DiaA_46"))
+
+	If ReadAdminIniFromExtension = 1 OR UCASE(Environ("S_NEOHS_ENVIRON")) = SVALUETESTENVIRON Then
+		PoAnyDlg.getControl("cmdControle").setVisible(TRUE)
+	Else
+		PoAnyDlg.getControl("cmdControle").setVisible(False)
+	End If
+
+	InitVersionDialog = 1
+	
+Exit Function
+ErrorHandler:	
+	InitVersionDialog = -1
+	MyErrMessenger ("InitVersionDialog")
+End Function
+'====================================================
+' Name        :  Controle_Installatie
+' Description :  Checks settings / installation and shows in popup
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub Controle_Installatie
+	Dim nRslt%
+	Dim sToShow$, sToClipBoard$, s$, sFile$
+	Dim bDocIniFound as Boolean
+	Dim bSettingIniFound as Boolean
+	
+	nRslt = SetGlobalVars 
+	s = ConvertToURL(PsIniPath & SDOCININAME)
+	If Dir(s) <> "" then bDocIniFound = true
+
+	sFile = GetPathToSettings(GetPathToIniInExtension)
+	If Dir(sFile) = "" Then
+		' customer extension on developing system, that does not have the paths in the settings.ini 
+		If UCASE(Environ("S_NEOHS_ENVIRON")) = SVALUETESTENVIRON Then
+			s = ConvertToURL(PreserveEndSlash(SDEVELOPPATH_PSEUDOEXTENSION_INI) & SSETTPATHSININAME)
+			sFile = GetPathToSettings(s)
+		Else
+			FileNotFoundMessage(SSETTINGSININAME & GetUIText("Gen_01"), sFile)
+		End If
+	End If
+	
+	If Dir(sFile) <> "" then bSettingIniFound = true
+
+	sToShow = GetUIText("DiaA_50") & SHS_VERSIE & " " & GetUIText("DiaA_51") & SCOMPNAMEDISPLAYED &_
+	Chr(13) & Chr(13) & GetUIText("DiaA_52") & Chr(13) & "   " & PsCustomfilesPath &_
+	Chr(13) & GetUIText("DiaA_53") & Chr(13) & "   " & PsottTemplatePath &_
+	Chr(13) & GetUIText("DiaA_54") & Chr(13) & "   " & PsIniPath &_
+	Chr(13) & GetUIText("DiaA_55") & Chr(13) & "   " & GetItemsInstallPath ("$(inst)") &_
+	Chr(13) & GetUIText("DiaA_56") & Chr(13) & "   " & GetItemsInstallPath ("$(user)") &_
+	Chr(13) & GetUIText("DiaA_57") & Chr(13) & "   " & GetItemsInstallPath ("$(work)") &_
+	Chr(13) & GetUIText("DiaA_58") & Chr(13) & "   " & GetItemsInstallPath ("$(home)") &_
+	Chr(13) & GetUIText("DiaA_60") & Chr(13) & "   " & bSettingIniFound &_
+	Chr(13) & GetUIText("DiaA_61") & Chr(13) & "   " & bDocIniFound	
+'	Chr(13) & GetUIText("DiaA_59") & GetExtensionInstallationDir &_
+	
+	sToClipBoard = sToShow
+'	PlaceTextOnClipBoard(sToClipBoard)
+'	sToShow = sToShow & Chr(13) & Chr(13) & GetUIText("DiaA_62")
+	msgbox sToShow, 64, GetUIText("DiaA_63") & GiveYYYYMMDDDatum
+
+End Sub
+
+'====================================================
+' Name        :  InitPlaceDlg
+' Description :  Dialog for placing file at various locations
+'                TODO: finish
+' Arguments   :  -
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function InitPlaceDlg as Integer
+	Dim sLogo$
+	Dim sInstallDir$
+	Dim aArray()
+	Dim oCntrl	
+	Dim sDocPath$, sFileName$, sFileExtension$, sSaveURL$, s$
+	Dim nRslt%
+
+On Error GoTo ErrorHandler
+	
+	sInstallDir = PreserveEndSlash(GetExtensionInstallationDir)
+	If Len(sInstallDir) < 3 then sInstallDir = PreserveEndSlash(SDEVELOPPATH_PSEUDOEXTENSION_VARIOUS)
+
+	'set dialog title
+	PoAnyDlg.setTitle(GetUIText("DiaA_00") & SMSGTITEL)
+
+	'set dialog logo
+	sLogo = sInstallDir & "icons/image3_26.bmp"
+	PoAnyDlg.GetControl("imgLogo").getModel.ImageURL = ConvertToUrl(sLogo)	
+	
+'	PoAnyDlg.GetControl("imgLogo").getModel.HelpText = GetUIText("Dia_010")
+'xray PoAnyDlg.GetControl("chkMS")
+	' set labels/texts
+	PoAnyDlg.GetControl("optLocal").setLabel(GetUIText("DiaA_01"))
+	PoAnyDlg.GetControl("optCloud").setLabel(GetUIText("DiaA_02"))
+	PoAnyDlg.GetControl("optCRM").setLabel(GetUIText("DiaA_03"))
+	PoAnyDlg.GetControl("optGD").setLabel(GetUIText("DiaA_04"))
+	PoAnyDlg.GetControl("cmdGD").setLabel(GetUIText("DiaA_05"))
+	PoAnyDlg.GetControl("fraDoctype").getModel.Label = GetUIText("DiaA_06")
+	PoAnyDlg.GetControl("chkPDF").setLabel(GetUIText("DiaA_07"))
+	PoAnyDlg.GetControl("chkODF").setLabel(GetUIText("DiaA_08"))
+	PoAnyDlg.GetControl("chkMS").setLabel(GetUIText("DiaA_09"))
+	PoAnyDlg.GetControl("cmdCancel").setLabel(GetUIText("DiaA_010"))
+	
+	If ThisComponent.HasLocation() Then
+		sDocPath = ThisComponent.getLocation
+		
+		' get name and path and display it
+		nRslt = GivePathAndNameOfFile(sDocPath, sFileName, sSaveURL)
+				
+		' get the file type and put that in hidden label
+		nRslt = GiveNameAndSeparateExtension(sFileName, sFileExtension)
+		PoAnyDlg.GetControl("lblCurrentType").setText(sFileExtension)
+		
+		' display name and path 
+		PoAnyDlg.GetControl("txtLocal").setText(sSaveURL & sFileName)
+	Else
+		' get the file type and put that in hidden label
+		sFileExtension = GetFileExtensionFromFileType
+		PoAnyDlg.GetControl("lblCurrentType").setText(sFileExtension)
+	End If
+	
+	' save as Microsoft not possible with Draw documents
+	If sFileExtension = "odg" then PoAnyDlg.GetControl("chkMS").setEnable(FALSE)
+
+	PoAnyDlg.GetControl("lblPlaceAs").setText(GetUIText("DiaA_011") & Chr(13) & GetUIText("DiaA_012") & " " & sFileExtension)
+		
+	' TODO
+	' get CMR/DMS config
+' TMP
+	aArray = Array("Needs more configuration")
+'	aArray = Array("vtiger","Alfresco","Covide","OpenIMS","...")
+	oCntrl = PoAnyDlg.GetControl("lstCRM") 
+	oCntrl.addItems(aArray, 0)
+	oCntrl.selectItemPos(0, True)	
+'Globalscope.BasicLibraries.LoadLibrary("XrayTool")
+'xray PoAnyDlg.GetControl("fraDoctype")
+
+' TMP
+	PoAnyDlg.GetControl("optCloud").setEnable(FALSE)
+	PoAnyDlg.GetControl("optCRM").setEnable(FALSE)
+	PoAnyDlg.GetControl("optGD").setEnable(FALSE)
+	PoAnyDlg.GetControl("cmdGD").setEnable(FALSE)
+	PoAnyDlg.GetControl("cmdGD").setLabel("Needs more config.")
+	PoAnyDlg.GetControl("txtCloud").setText("Needs more configuration")
+
+	' set focus for start
+	PoAnyDlg.GetControl("optLocal").setFocus()
+	optLocal_Select
+
+	InitPlaceDlg = 1
+	
+Exit Function
+ErrorHandler:	
+	InitPlaceDlg = -1
+	MyErrMessenger ("InitPlaceDlg")
+End Function
+
+'====================================================
+' Name        :  cmdXXX_Click
+' Description :  events in PlaceDlg
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub cmdLocal_Click
+	Dim sDocPath$, sFileName$, sFileExtension$, sSaveURL$, s$
+	Dim nRslt%, l%, m%
+
+On Error GoTo ErrorHandler
+	
+	If ThisComponent.HasLocation() Then
+		sSaveURL = ThisComponent.getLocation
+		' get name and path
+		nRslt = GivePathAndNameOfFile(sSaveURL, sFileName, sDocPath)
+	Else
+		' Get the default name/location for the document
+		sDocPath = GiveThisDocsDefaultPath()
+		sFileName = GiveThisDocsDefaultName()
+	End If
+
+	nRslt = GiveNameAndSeparateExtension(sFileName, sFileExtension)
+
+	sSaveURL = GetNameUsingFilePicker(sDocPath, sFileName)
+
+	PoAnyDlg.GetControl("txtLocal").setText(sSaveURL)
+	PoAnyDlg.GetControl("chkPDF").setFocus
+
+Exit Sub
+ErrorHandler:
+	MyErrMessenger ("cmdLocal_Click")
+End Sub
+'----------------------------------------------------
+Sub cmdCloud_Click
+' start file locater
+
+End Sub
+'----------------------------------------------------
+Sub optLocal_Select
+	PoAnyDlg.GetControl("txtLocal").setEnable(TRUE)
+	PoAnyDlg.GetControl("cmdLocal").setEnable(TRUE)
+
+	PoAnyDlg.GetControl("txtCloud").setEnable(FALSE)
+	PoAnyDlg.GetControl("cmdCloud").setEnable(FALSE)
+	PoAnyDlg.GetControl("lstCRM").setEnable(FALSE)
+	EnAbleDocTypeChecks(TRUE)
+End Sub
+'----------------------------------------------------
+Sub optCloud_Select
+	PoAnyDlg.GetControl("txtCloud").setEnable(TRUE)
+	PoAnyDlg.GetControl("cmdCloud").setEnable(TRUE)
+
+	PoAnyDlg.GetControl("txtLocal").setEnable(FALSE)
+	PoAnyDlg.GetControl("cmdLocal").setEnable(FALSE)
+	PoAnyDlg.GetControl("lstCRM").setEnable(FALSE)
+	EnAbleDocTypeChecks(TRUE)
+End Sub
+'----------------------------------------------------
+Sub optCRM_Select
+	PoAnyDlg.GetControl("lstCRM").setEnable(TRUE)
+	PoAnyDlg.GetControl("lstCRM").setFocus()
+
+	PoAnyDlg.GetControl("txtLocal").setEnable(FALSE)
+	PoAnyDlg.GetControl("cmdLocal").setEnable(FALSE)
+	PoAnyDlg.GetControl("txtCloud").setEnable(FALSE)
+	PoAnyDlg.GetControl("cmdCloud").setEnable(FALSE)
+	EnAbleDocTypeChecks(TRUE)
+End Sub
+'----------------------------------------------------
+Sub optGD_Select
+	EnAbleDocTypeChecks(FALSE)
+	PoAnyDlg.GetControl("cmdGD").setEnable(TRUE)
+	PoAnyDlg.GetControl("cmdGD").setFocus()
+End Sub
+'====================================================
+' Name        :  EnAbleDocTypeChecks
+' Description :  execute enabling controls
+'----------------------------------------------------
+Sub EnAbleDocTypeChecks(bEnable)
+	PoAnyDlg.GetControl("chkPDF").setEnable(bEnable)
+	PoAnyDlg.GetControl("chkODF").setEnable(bEnable)
+	PoAnyDlg.GetControl("chkMS").setEnable(bEnable)
+End Sub
+'----------------------------------------------------
+Sub chkPDF_Click
+	IF PoAnyDlg.GetControl("chkPDF").getState = 0 AND _
+	PoAnyDlg.GetControl("chkODF").getState  = 0 AND _
+	PoAnyDlg.GetControl("chkMS").getState = 0 then
+		PoAnyDlg.GetControl("cmdOK").setEnable(False)
+	Else
+		PoAnyDlg.GetControl("cmdOK").setEnable(True)
+	End If
+End Sub
+'----------------------------------------------------
+Sub chkODF_Click
+	IF PoAnyDlg.GetControl("chkPDF").getState = 0 AND _
+	PoAnyDlg.GetControl("chkODF").getState  = 0 AND _
+	PoAnyDlg.GetControl("chkMS").getState = 0 then
+		PoAnyDlg.GetControl("cmdOK").setEnable(False)
+	Else
+		PoAnyDlg.GetControl("cmdOK").setEnable(True)
+	End If
+End Sub
+'----------------------------------------------------
+Sub chkMS_Click
+	IF PoAnyDlg.GetControl("chkPDF").getState = 0 AND _
+	PoAnyDlg.GetControl("chkODF").getState  = 0 AND _
+	PoAnyDlg.GetControl("chkMS").getState = 0 then
+		PoAnyDlg.GetControl("cmdOK").setEnable(False)
+	Else
+		PoAnyDlg.GetControl("cmdOK").setEnable(True)
+	End If
+End Sub
+'----------------------------------------------------
+Sub cmdGD_Click
+
+' launch extension
+
+End Sub
+'====================================================
+' Name        :  InitMailDlg
+' Description :  dialog for mailing document
+' Arguments   :  -
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function InitMailDlg as Integer
+	Dim sLogo$
+	Dim sInstallDir$
+
+On Error GoTo ErrorHandler
+
+	'set dialog logo
+	sInstallDir = PreserveEndSlash(GetExtensionInstallationDir)
+	If Len(sInstallDir) < 3 then sInstallDir = PreserveEndSlash(SDEVELOPPATH_PSEUDOEXTENSION_VARIOUS)
+	
+	sLogo = sInstallDir & "icons/image4_26.bmp"
+	PoAnyDlg.GetControl("imgLogo").getModel.ImageURL = ConvertToUrl(sLogo)
+	
+	PoAnyDlg.setTitle(GetUIText("DiaA_20") & SMSGTITEL)
+	PoAnyDlg.GetControl("fraFiletype").getModel.Label = GetUIText("DiaA_21")
+	PoAnyDlg.GetControl("optPDF").setLabel(GetUIText("DiaA_22"))
+	PoAnyDlg.GetControl("optODF").setLabel(GetUIText("DiaA_23"))
+	PoAnyDlg.GetControl("optMS").setLabel(GetUIText("DiaA_24"))
+	PoAnyDlg.GetControl("cmdCancel").setLabel(GetUIText("DiaA_25"))
+
+	InitMailDlg = 1
+	
+Exit Function
+ErrorHandler:	
+	InitMailDlg = -1
+	MyErrMessenger ("InitMailDlg")
+End Function
+'====================================================
+' Name        :  InitPrintDlg
+' Description :  dialog for printing
+' Arguments   :  -
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function InitPrintDlg as Integer
+	Dim sLogo$
+	Dim sInstallDir$
+
+On Error GoTo ErrorHandler
+
+	'set dialog logo
+	sInstallDir = PreserveEndSlash(GetExtensionInstallationDir)
+	If Len(sInstallDir) < 3 then sInstallDir = PreserveEndSlash(SDEVELOPPATH_PSEUDOEXTENSION_VARIOUS)
+	
+	sLogo = sInstallDir & "icons/image5_26.bmp"
+	PoAnyDlg.GetControl("imgLogo").getModel.ImageURL = ConvertToUrl(sLogo)
+'	PoAnyDlg.GetControl("imgLogo").getModel.HelpText = GetUIText("Dia_010")
+
+	PoAnyDlg.setTitle(GetUIText("DiaA_30") & SMSGTITEL)
+	PoAnyDlg.GetControl("fraPapertype").getModel.Label = GetUIText("DiaA_31")
+	PoAnyDlg.GetControl("optStandard").setLabel(GetUIText("DiaA_32"))
+	PoAnyDlg.GetControl("optBlanc").setLabel(GetUIText("DiaA_33"))
+	PoAnyDlg.GetControl("optLogo").setLabel(GetUIText("DiaA_34"))	
+	PoAnyDlg.GetControl("cmdCancel").setLabel(GetUIText("DiaA_35"))
+
+	InitPrintDlg = 1
+
+Exit Function
+ErrorHandler:	
+	InitPrintDlg = -1
+	MyErrMessenger ("InitPrintDlg")
+End Function
+

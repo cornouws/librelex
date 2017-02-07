@@ -1,0 +1,1372 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+
+Option Explicit
+
+Public BBEENHEREBEFORE as Boolean ' prevent running lstDocsoorten_Change twice ...
+
+Sub Main
+Globalscope.BasicLibraries.LoadLibrary("XrayTool")
+ StrtDocKeuzeVenster()
+End Sub
+
+'====================================================
+' Name        :  InitMyDocDialog
+' Description :  Initialisation of the Dialog
+' Arguments   :  -
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function InitMyDocDialog () as Integer
+	Dim oControl 
+	Dim i%
+	Dim s$, sDocTypeDlgTitle$
+	Dim bDocIniOK as Boolean, bLocOK as Boolean, bLangOK as Boolean
+	Dim nReslt%
+	Dim bUseFAV as Boolean, bUseALL as Boolean, bUseODS as Boolean, bUseODP as Boolean, bUseODG as Boolean
+	
+On Error GoTo ErrorHandler
+	
+	' load doctypes data from ini in global vars
+	nReslt = LoadDocIniDataInVars (bUseFAV, bUseALL, bUseODS, bUseODP, bUseODG)
+	If nReslt = 1 then
+		bDocIniOK = True
+		' OK
+	ElseIf nReslt = -2 Then
+		' exit but no message
+		InitMyDocDialog = -2
+		Exit Function	
+	Else
+		InitMyDocDialog = -1
+		Exit Function
+	End If
+	
+	' set visibility and position of CategoryIcons
+	nReslt = SetCategoryIcons (bUseFAV, bUseALL, bUseODS, bUseODP, bUseODG)
+	
+	' TODO
+	' LoadDocCheckFieldDataInVar ' not so easy ..
+	' LoadDocNamingRulesInVar	' doc, var1, var2, separator etc
+								' but also fill public vars in FillThisDocData
+	
+	If Not bDocIniOK then
+		InitMyDocDialog = -1
+		Exit Function
+	End If	
+
+	' load doc data in lstControl
+	' mind! the next handling of arrays is fast, but makes PsDocSoorten() and so on, 
+	' the same as the other! (which in this case is no problem)
+	If bUseFAV Then
+		PsDocSoorten() = PsFAVDocs()
+		PsDocSoortenDisplayNames() = PsFAVDisplayNames()
+		PsDocSoortenData() = PsFAVDocsData()
+		PsDocSoortenNames() = PsFAVDocNames()
+'		PsDocSoortenReuseData() = PsFAVDocReuseData()
+		PsDocSoortenLabels() = PsFAVDocLabels()
+		PsDocSoortenOptions() = PsFAVDocOptions()
+		
+		' change this, finally for use in the save function
+		PsDocType = "all"		
+		sDocTypeDlgTitle = GetUIText("Sta_02f")
+	ElseIf bUseALL Then
+		PsDocSoorten() = PsALLDocs()
+		PsDocSoortenDisplayNames() = PsALLDisplayNames()
+		PsDocSoortenData() = PsALLDocsData()
+		PsDocSoortenNames() = PsALLDocNames()
+'		PsDocSoortenReuseData() = PsALLDocReuseData()
+		PsDocSoortenLabels() = PsALLDocLabels()
+		PsDocSoortenOptions() = PsALLDocOptions()
+		
+		' why the hack doesn't this work ?!
+		PoDocDlg.GetControl("cmd_ALL").getModel.Toggle = False
+		PsDocType = "all"		
+		sDocTypeDlgTitle = GetUIText("Sta_02f")
+'		xray PoDocDlg.GetControl("cmd_ALL").getModel 'BackgroundColor, HelpText, State
+'		PoDocDlg.GetControl("cmd_ALL").getModel.BackgroundColor = 1000
+'		PoDocDlg.GetControl("cmd_ALL").getModel.HelpText = "klick me"
+'		PoDocDlg.GetControl("cmd_ALL").getModel.Toggle = False
+'		PoDocDlg.GetControl("cmd_ALL").getModel.setPropertyValue("Toggle", "False")
+	ElseIf bUseODS Then
+		PsDocSoorten() = PsODSDocs()
+		PsDocSoortenDisplayNames() = PsODSDisplayNames()
+		PsDocSoortenData() = PsODSDocsData()
+		PsDocSoortenNames() = PsODSDocNames()
+'		PsDocSoortenReuseData() = PsODSDocReuseData()
+		PsDocSoortenLabels() = PsODSDocLabels()
+		PsDocSoortenOptions() = PsODSDocOptions()
+		PsDocType = "ods"
+		sDocTypeDlgTitle = GetUIText("Sta_02c")
+	ElseIf bUseODP Then
+		PsDocSoorten() = PsODPDocs()
+		PsDocSoortenDisplayNames() = PsODPDisplayNames()
+		PsDocSoortenData() = PsODPDocsData()
+		PsDocSoortenNames() = PsODPDocNames()
+'		PsDocSoortenReuseData() = PsODPDocReuseData()
+		PsDocSoortenLabels() = PsODPDocLabels()
+		PsDocSoortenOptions() = PsODPDocOptions()
+		PsDocType = "odp"
+		sDocTypeDlgTitle = GetUIText("Sta_02d")
+	ElseIf bUseODG Then
+		PsDocSoorten() = PsODGDocs()
+		PsDocSoortenDisplayNames() = PsODGDisplayNames()
+		PsDocSoortenData() = PsODGDocsData()
+		PsDocSoortenNames() = PsODGDocNames()
+'		PsDocSoortenReuseData() = PsODGDocReuseData()
+		PsDocSoortenLabels() = PsODGDocLabels()
+		PsDocSoortenOptions() = PsODGDocOptions()
+		PsDocType = "odg"
+		sDocTypeDlgTitle = GetUIText("Sta_02e")
+	Else
+	End If
+	
+	oControl = PoDocDlg.GetControl("lstDocSoorten")
+	' show disply names, not the file name
+	oControl.addItems(PsDocSoortenDisplayNames(), 0)
+	oControl.selectItemPos(0, True)	
+
+	' option
+	SetOptionControlsDefault
+
+	'set dialog title
+	PoDocDlg.setTitle(SCOMPNAMEDISPLAYED & " - " & sDocTypeDlgTitle)
+	
+	InitMyDocDialog = 1
+	
+Exit Function
+ErrorHandler:	
+	InitMyDocDialog = -1
+	MyErrMessenger ("InitMyDocDialog")
+End Function
+'====================================================
+' Name        :  SetCategoryIcons
+' Description :  
+' Arguments   :  booleans for use of category
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function SetCategoryIcons (bUseFAV, bUseALL, bUseODS, bUseODP, bUseODG) as integer
+
+On Error GoTo ErrorHandler
+
+	If Not bUseFAV Then ' make this one just inactive
+		PoDocDlg.getControl("cmd_FAV").SetEnable(FALSE)
+' CUSTOM_ODDV
+		If PbHideFavIcon Then
+			PoDocDlg.getControl("cmd_FAV").setVisible(FALSE)
+			PoDocDlg.getControl("cmd_ODG").getModel.PositionX = PoDocDlg.getControl("cmd_ODP").getModel.PositionX
+			PoDocDlg.getControl("cmd_ODP").getModel.PositionX = PoDocDlg.getControl("cmd_ODS").getModel.PositionX
+			PoDocDlg.getControl("cmd_ODS").getModel.PositionX = PoDocDlg.getControl("cmd_ALL").getModel.PositionX
+			PoDocDlg.getControl("cmd_ALL").getModel.PositionX = PoDocDlg.getControl("cmd_FAV").getModel.PositionX
+		End If
+
+	End If
+	If Not bUseALL Then
+		PoDocDlg.getControl("cmd_ALL").setVisible(FALSE)
+		PoDocDlg.getControl("cmd_ODG").getModel.PositionX = PoDocDlg.getControl("cmd_ODP").getModel.PositionX
+		PoDocDlg.getControl("cmd_ODP").getModel.PositionX = PoDocDlg.getControl("cmd_ODS").getModel.PositionX
+		PoDocDlg.getControl("cmd_ODS").getModel.PositionX = PoDocDlg.getControl("cmd_ALL").getModel.PositionX
+	End If
+	If Not bUseODS Then
+		PoDocDlg.getControl("cmd_ODS").setVisible(FALSE)
+		PoDocDlg.getControl("cmd_ODG").getModel.PositionX = PoDocDlg.getControl("cmd_ODP").getModel.PositionX
+		PoDocDlg.getControl("cmd_ODP").getModel.PositionX = PoDocDlg.getControl("cmd_ODS").getModel.PositionX
+	End If
+	If Not bUseODP Then
+		PoDocDlg.getControl("cmd_ODP").setVisible(FALSE)
+		PoDocDlg.getControl("cmd_ODG").getModel.PositionX = PoDocDlg.getControl("cmd_ODP").getModel.PositionX
+	End If
+	If Not bUseODG Then
+		PoDocDlg.getControl("cmd_ODG").setVisible(FALSE)
+	End If
+	
+	SetCategoryIcons = 1
+	
+Exit Function
+ErrorHandler:	
+	SetCategoryIcons = -1
+	MyErrMessenger ("SetCategoryIcons")
+End Function 
+'====================================================
+' Name        :  InitMyDocDialogForEditing
+' Description :  Initialisation of dialog for editing values allready in document
+'				 Text documents only!
+' Arguments   :  -
+' Returns     :  1 if OK; -1 or -2 with Failure
+'----------------------------------------------------
+Function InitMyDocDialogForEditing () as Integer
+	Dim oControl 
+	Dim i%, j%
+	Dim s$, sDocTypeDlgTitle$
+	Dim nReslt%
+	Dim bUseFAV as Boolean, bUseALL as Boolean, bUseODS as Boolean, bUseODP as Boolean, bUseODG as Boolean
+	
+On Error GoTo ErrorHandler
+	
+	' load doctypes data from ini in global vars
+	nReslt = LoadDocIniDataInVars (bUseFAV, bUseALL, bUseODS, bUseODP, bUseODG)
+	If nReslt = 1 then
+		' OK
+	ElseIf nReslt = -2 Then
+		' exit but no message
+		InitMyDocDialogForEditing = -2
+		Exit Function	
+	Else
+		InitMyDocDialogForEditing = -1
+		Exit Function
+	End If
+	
+	' get type document
+	' = PsThisDocsType
+	
+	' set visibility of CategoryIcons
+	PoDocDlg.getControl("cmd_FAV").SetEnable(FALSE)
+	PoDocDlg.getControl("cmd_ALL").SetEnable(FALSE)
+	PoDocDlg.getControl("cmd_ODS").SetVisible(FALSE)
+	PoDocDlg.getControl("cmd_ODP").SetVisible(FALSE)
+	PoDocDlg.getControl("cmd_ODG").SetVisible(FALSE)
+	
+	' currently, editing document only works in Writer documents  -- TODO4Customer
+	PsDocSoorten() = PsALLDocs()
+	PsDocSoortenDisplayNames() = PsALLDisplayNames()
+	PsDocSoortenData() = PsALLDocsData()
+	PsDocSoortenNames() = PsALLDocNames()
+'	PsDocSoortenReuseData() = PsALLDocReuseData()
+	PsDocSoortenLabels() = PsALLDocLabels()
+	PsDocSoortenOptions() = PsALLDocOptions()
+	PsDocType = "all"		
+	sDocTypeDlgTitle = GetUIText("Sta_02b")
+	' get the string with fields for this doc type
+	j = UBound (PsDocSoorten())
+	For i = 0 to j
+		' we look for the template name, thot corresponds with the doc variable
+		If UCase(PsDocSoorten(i)) = UCase(PsThisDocsType) Then
+			' i is the string we need, see below: oControl.selectItemPos(i, True)
+			' PsDocSoortenData(i) is for the current doc
+			Exit For
+		End If
+	Next
+
+	' Check if PsThisDocsType is found, thus j =< i
+	' if not, most probably the usersfield "huisstijldoc" is not corresponding with the value in de doc-ini file	
+	If i > j then
+		VariousErrorMessage(GetUIText("Dia_01") , 48)
+		InitMyDocDialogForEditing = -1
+		Exit Function
+	End If
+
+	' set public var
+	PbInitMyDocDialogForEditing = True
+	
+	 ' load doc data in lstControl
+	oControl = PoDocDlg.GetControl("lstDocSoorten")
+	' but here we show the display names, same index
+	oControl.addItems(PsDocSoortenDisplayNames(), 0)
+
+	' select proper doc display name
+	oControl.selectItemPos(i, True)
+	' disable control
+'	oControl.setVisible ("FALSE")	
+	oControl.SetEnable("FALSE")
+
+	' in StrtDocKeuzeVenster it is triggerd, not in StartEditingDoc ...
+	ReadOndtDataFromOptions
+
+	' options
+	SetOptionControlsDefault
+	
+	' read fields from doc in dlg
+	ReadDlgDataFromDoc (PsDocSoortenData(i))
+
+	'set dialog title
+	PoDocDlg.setTitle(SCOMPNAMEDISPLAYED & " - " & sDocTypeDlgTitle)
+
+	InitMyDocDialogForEditing = 1
+	
+Exit Function
+ErrorHandler:	
+	InitMyDocDialogForEditing = -1
+	MyErrMessenger("InitMyDocDialogForEditing")
+End Function 
+'====================================================
+' Name        :  SetOptionControlsDefault
+' Description :  default settings for controls, depending new doc or editing
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub SetOptionControlsDefault
+	Dim sLogo$
+	Dim sInstallDir$
+	Dim oCntrl
+	
+	sInstallDir = PreserveEndSlash(GetExtensionInstallationDir)
+	If Len(sInstallDir) < 3 then sInstallDir = PreserveEndSlash(SDEVELOPPATH_PSEUDOEXTENSION_VARIOUS)
+
+	If PbInitMyDocDialogForEditing Then
+		PoDocDlg.GetControl("lstDocSoorten").setEnable(FALSE)
+
+		' settings for PsCurrentDocSrtOptions are done in lstDocSoorten_Update 
+		' where it's known which if the controls are visible/placed
+		
+	End If
+	
+	sLogo = sInstallDir & SCOMPLOGONAME
+	oCntrl = PoDocDlg.GetControl("ctrlBusinessLogo")
+	oCntrl.getModel.ImageURL = ConvertToUrl(sLogo) 	
+	oCntrl.getModel.positiony = 4
+'	oCntrl.getModel.positionx = PoDocDlg.getModel.Width - oCntrl.getModel.Width - 7
+'	oCntrl.getModel.Height = 30  ' 36 default
+'	oCntrl.getModel.Width = 66   ' 55 default
+'	ChangeBusinessLogo (oCntrl)
+
+	sLogo = sInstallDir & "dlgicons/nouenoff.jpg"
+	PoDocDlg.GetControl("cntrlByNouenOff").getModel.ImageURL = ConvertToUrl(sLogo) 
+
+	sLogo = sInstallDir & "dlgicons/fav.png"
+	PoDocDlg.GetControl("cmd_FAV").getModel.ImageURL = ConvertToUrl(sLogo)
+	PoDocDlg.GetControl("cmd_FAV").getModel.HelpText = GetUIText("Dia_010")
+
+	sLogo = sInstallDir & "dlgicons/all.png" 
+	PoDocDlg.GetControl("cmd_ALL").getModel.ImageURL = ConvertToUrl(sLogo)
+	PoDocDlg.GetControl("cmd_ALL").getModel.HelpText = GetUIText("Dia_011")
+
+	sLogo = sInstallDir &  "dlgicons/ods.png"
+	PoDocDlg.GetControl("cmd_ODS").getModel.ImageURL = ConvertToUrl(sLogo)
+	PoDocDlg.GetControl("cmd_ODS").getModel.HelpText = GetUIText("Dia_012")
+
+	sLogo = sInstallDir &  "dlgicons/odp.png"
+	PoDocDlg.GetControl("cmd_ODP").getModel.ImageURL = ConvertToUrl(sLogo)
+	PoDocDlg.GetControl("cmd_ODP").getModel.HelpText = GetUIText("Dia_013")
+
+	sLogo = sInstallDir &  "dlgicons/odg.png"
+	PoDocDlg.GetControl("cmd_ODG").getModel.ImageURL = ConvertToUrl(sLogo)
+	PoDocDlg.GetControl("cmd_ODG").getModel.HelpText = GetUIText("Dia_014")
+
+	PoDocDlg.getModel.BackgroundColor = PnThemeColor
+
+	If NLIMITEDNUMBERDOCS > 0 then
+		' pilot, maxumum number of documents NLIMITEDNUMBERDOCS
+'xray PoDocDlg.GetControl("txtProductStatus")
+		PoDocDlg.GetControl("txtProductStatus").setText (GetUIText("Dia_02") & CStr(NLIMITEDNUMBERDOCS) & GetUIText("Dia_02a") )
+		PoDocDlg.GetControl("txtProductStatus").getModel.Height = 10
+	'	PoDocDlg.GetControl("txtProductStatus").setVisible(TRUE)
+	Else
+		PoDocDlg.GetControl("txtProductStatus").getModel.Height = 0
+	End If
+	
+End Sub
+'====================================================
+' Name        :  FillListControlIfAvailable
+' Description :  Checks existence of list controls, fill's existing ones with data from inifile
+' Arguments   :  Name of control, wich is used in ini-file name: "xxx" & sName & ".ini"
+' Returns     :  1 if OK; -1 or -2 with Failure
+'----------------------------------------------------
+Function FillListControlIfAvailable(sName) as Integer
+	Dim sIniName$
+	Dim i%, l%
+	Dim oCtrl
+	Dim sDataFromIni() as String
+	
+	On Error GoTo ErrorHandler
+	
+	' length of the clean name
+'	l = Len(sName)
+'	For i = 0 to UBound(PsDocSoortCurrent())
+'		If UCase(Left(PsDocSoortCurrent(i), l)) = UCase(sName) then
+'			'If Len(PsDocSoortCurrent(i)) - l < 3 Then
+'			' ? prevent 'project' to be the same as 'projectnaam'
+'				oCtrl = PoDocDlg.GetControl("txt"& sName)
+'			'End If
+'			Exit For
+'		End If
+'	Next
+	
+	oCtrl = PoDocDlg.GetControl("txt"& sName)
+	If Not isNull(oCtrl) Then
+		sIniName = SLISTSINISTART & LCase(sName) & ".ini"
+		sDataFromIni = FillArrayFromOneLineIni(PsIniPath & sIniName)
+		If IsNull(sDataFromIni) < 0  then
+			FillListControlIfAvailable = -2
+			Exit function
+		End If
+		oCtrl.addItems(sDataFromIni(), 0)
+	Else
+		FillListControlIfAvailable = -1	
+	End If
+	
+Exit Function
+ErrorHandler:
+	FillListControlIfAvailable =  -1
+	MyErrMessenger("FillListControlIfAvailable")
+End Function
+'====================================================
+' Name        :  FillHandlerInDialog
+' Description :  Checks if doc should contain behandelaar, and if so, fills the according text box with name
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub FillHandlerInDialog
+	Dim i%
+	Dim sOndt$
+	Dim sArray() as String
+	dim oCtrl
+
+	On Error GoTo ErrorHandler
+	If UBound(PsOndtData) < 0 then 
+		' PsOndtData not yet initialised
+		Exit Sub
+	Else
+		sOndt = PsOndtData(1,1) & " "  & PsOndtData(2,1)
+	End If
+
+	sArray() = Split(PsHandlerNameBMs,",")
+
+	For i = 0 to UBound(sArray())
+		oCtrl = PoDocDlg.GetControl("txt" & sArray(i))
+		If Not IsNull(oCtrl) Then
+			oCtrl.Text = sOndt
+			' only do one - speed up...
+			Exit Sub
+		End If
+	Next
+
+Exit Sub
+ErrorHandler:
+	MyErrMessenger("FillHandlerInDialog")
+End Sub
+'====================================================
+' Name        :  FillDateInDialog
+' Description :  Checks if doc should contain date, and if so, fills the according text box with current date
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub FillDateInDialog
+	Dim i%
+	Dim sDate$
+	Dim sArray()
+	Dim oCtrl
+
+On Error GoTo ErrorHandler
+	
+	sArray() = Split(PsDatesBMs,",")
+	sDate = GiveMyDateInLanguageAndPattern ' uses global vars from settings ini
+	
+	For i = 0 to UBound(sArray())
+		oCtrl = PoDocDlg.GetControl("txt" & sArray(i))
+		If Not IsNull(oCtrl) Then
+			oCtrl.Text = sDate
+			' only do one - speed up...
+			Exit Sub
+		End If
+	Next
+	
+Exit Sub
+ErrorHandler:
+	MyErrMessenger("FillDateInDialog")
+End Sub
+'====================================================
+' Name        :  cmd_XXX_Click
+' Description :  Click events for category icons
+'----------------------------------------------------
+Sub cmd_FAV_Click
+	BBEENHEREBEFORE = FALSE
+	UpdateLstDocSoortenForCategory("FAV")
+End Sub
+Sub cmd_ALL_Click
+	BBEENHEREBEFORE = FALSE
+	UpdateLstDocSoortenForCategory("ALL")
+End Sub
+Sub cmd_ODS_Click
+	BBEENHEREBEFORE = FALSE
+	UpdateLstDocSoortenForCategory("ODS")
+End Sub
+Sub cmd_ODP_Click
+	BBEENHEREBEFORE = FALSE
+	UpdateLstDocSoortenForCategory("ODP")
+End Sub
+Sub cmd_ODG_Click
+	BBEENHEREBEFORE = FALSE
+	UpdateLstDocSoortenForCategory("ODG")
+End Sub
+'====================================================
+' Name        :  UpdateLstDocSoortenForCategory
+' Description :  actually sett icons state
+'----------------------------------------------------
+Sub UpdateLstDocSoortenForCategory(sCat$)
+	Dim oControl
+
+On Error GoTo ErrorHandler
+
+	' first enable all icons
+'	PoDocDlg.GetControl("cmd_FAV").setEnable(TRUE)
+	PoDocDlg.GetControl("cmd_ALL").setEnable(TRUE)
+	PoDocDlg.GetControl("cmd_ODS").setEnable(TRUE)
+	PoDocDlg.GetControl("cmd_ODP").setEnable(TRUE)
+	PoDocDlg.GetControl("cmd_ODG").setEnable(TRUE)
+
+	' disable the one clicked 
+	PoDocDlg.GetControl("cmd_"& sCat).setEnable(FALSE)
+
+	' load section all in PsDocSoorten() and PsDocSoortenNames()
+	Select Case sCat
+	Case "FAV"
+		PsDocSoorten() = PsFAVDocs()
+		PsDocSoortenDisplayNames() = PsFAVDisplayNames()
+		PsDocSoortenData() = PsFAVDocsData()
+		PsDocSoortenNames() = PsFAVDocNames()
+'		PsDocSoortenReuseData() = PsFAVDocReuseData()
+		PsDocSoortenLabels() = PsFAVDocLabels()
+		PsDocSoortenOptions() = PsFAVDocOptions()
+		'Alas the next does not work :-(
+'		PoDocDlg.GetControl("cmd_FAV").getModel.Toggle = False
+	Case "ALL"
+		PsDocSoorten() = PsALLDocs()
+		PsDocSoortenDisplayNames() = PsALLDisplayNames()
+		PsDocSoortenData() = PsALLDocsData()
+		PsDocSoortenNames() = PsALLDocNames()
+'		PsDocSoortenReuseData() = PsALLDocReuseData()
+		PsDocSoortenLabels() = PsALLDocLabels()
+		PsDocSoortenOptions() = PsALLDocOptions()
+		PsDocType = "all"
+	Case "ODS"
+		PsDocSoorten() = PsODSDocs()
+		PsDocSoortenDisplayNames() = PsODSDisplayNames()
+		PsDocSoortenData() = PsODSDocsData()
+		PsDocSoortenNames() = PsODSDocNames()
+'		PsDocSoortenReuseData() = PsODSDocReuseData()
+		PsDocSoortenLabels() = PsODSDocLabels()
+		PsDocSoortenOptions() = PsODSDocOptions()
+		PsDocType = "ots"
+	Case "ODP"
+		PsDocSoorten() = PsODPDocs()
+		PsDocSoortenDisplayNames() = PsODPDisplayNames()
+		PsDocSoortenData() = PsODPDocsData()
+		PsDocSoortenNames() = PsODPDocNames()
+'		PsDocSoortenReuseData() = PsODPDocReuseData()
+		PsDocSoortenLabels() = PsODPDocLabels()
+		PsDocSoortenOptions() = PsODPDocOptions()
+		PsDocType = "otp"
+	Case "ODG"
+		PsDocSoorten() = PsODGDocs()
+		PsDocSoortenDisplayNames() = PsODGDisplayNames()
+		PsDocSoortenData() = PsODGDocsData()
+		PsDocSoortenNames() = PsODGDocNames()
+'		PsDocSoortenReuseData() = PsODGDocReuseData()
+		PsDocSoortenLabels() = PsODGDocLabels()
+		PsDocSoortenOptions() = PsODGDocOptions()
+		PsDocType = "otg"
+	End Select
+	' update control
+	oControl = PoDocDlg.GetControl("lstDocSoorten")
+	oControl.removeItems(0, uBound(oControl.getItems)+1)
+	' show the display names, not the template names
+	oControl.addItems(PsDocSoortenDisplayNames(), 0)
+	oControl.selectItemPos(0, True)	
+	oControl.SetFocus()
+	
+	Exit Sub	
+ErrorHandler:
+	MyErrMessenger ("UpdateLstDocSoortenForCategory")
+End Sub
+'====================================================
+' © Cor Nouws - Nou&Off
+' Name        :  lstDocSoorten_Change
+' Description :  Event when lstOnderdeel is changed, rebuilds docDialog for seelcted doc type
+'                Bound to controll in DocDlg
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub lstDocSoorten_Change () 
+	Dim oLstCtrl, oLstCtrlModel, oControl, oDlgModel
+	Dim i%, nPos%
+	Dim s$
+	Dim sDataFromIni()
+	Dim sLabel$, sType$
+	Dim nLines%
+	Dim iTabIndex&	
+	Dim yPosBottomExtra&, yExtraForTopControls&, yPosLineBelowOptions&
+	Dim ySpacing&, yHSepSpacing&, yHSepSpacingTop&, ySizeMulti&, yPosTop&, yPosStart&, yPos&, yPosColumn1&, yPosColumn2&, ySize&, ySizeRB&, yPosMax&
+	Dim xPosText&, xPosEdit&, xPosTextStart&, xPosEditStart&
+	Dim xTo2ndColumn&  ' to use with colums in the dialog
+	Dim bColumnsUsed as Boolean
+	Dim bWideBox as Boolean ' handle case with _W double wide controls
+	Dim bWideBoxUsed as Boolean ' handle case with _W double wide controls
+	Dim xSizeText&, xSizeEdit&
+	Dim xEndDlg& 
+	Dim iLstRadioButton%
+	Dim nStep&	' to set the step (page) property of controls (hence a long)
+	Dim nColumn%  ' to set if colums are used in the dialog
+	Dim rState%
+	Dim nListBoxes%
+	Dim nRslt%
+	Dim sMissingLists$
+	Dim nIndexRadioButtonTst%
+	Dim pEnableWithEditing as Boolean ' for checkboxes and option buttons
+
+	On Error GoTo ErrorHandler
+	If NOT BBEENHEREBEFORE Then
+		' the very first time this function is called when the list of documents is
+		' added to the list box, and then it is called again for selecting the first
+		' in the list... so bail out on the first call - saves serous time.
+		BBEENHEREBEFORE = TRUE
+		Exit Sub
+	End If
+'msgbox "Start lstDocSoorten_Change  "
+
+	pEnableWithEditing = true
+	oLstCtrl = PoDocDlg.GetControl("lstDocSoorten")
+	nPos = oLstCtrl.selectedItemPos()
+
+
+	' Use these lines, and one at the bottom of this function
+	' to prevent that the user chages the item in the listbox to fast
+	oLstCtrlModel = oLstCtrl.getModel
+	oLstCtrlModel.Enabled = FALSE
+	
+	oDlgModel = PoDocDlg.getModel()
+	' shrink the dialog for now, looks better
+	oDlgModel.Height = 62
+
+
+	' Reset STEP
+	PoDocDlg.getModel.Step = 0
+
+	' remove present controls, if any
+	' reset PbLocationsUsed etc, since those are document dependent and the next choosen doc may have different values
+	If PbLocationsUsed = TRUE Then
+		oControl = PoDocDlg.getControl(SLSTLOCATIONS) : oControl.dispose
+		oDlgModel.removeByName(SLSTLOCATIONS) : PoDocDlg.removeControl(oControl)
+		oControl = PoDocDlg.getControl(SLBLLOCATIONS) : oControl.dispose
+		oDlgModel.removeByName(SLBLLOCATIONS) : PoDocDlg.removeControl(oControl)
+		PbLocationsUsed = FALSE
+	End If
+	If Ubound(PsCurrentDocSrtLanguages())>0 Then ' PbLanguagesUsed = TRUE Then
+			oControl = PoDocDlg.getControl(SLSTLANGUAGES)
+			oControl.removeActionListener(oLanguageListener) : oControl.dispose
+			oDlgModel.removeByName(SLSTLANGUAGES) : PoDocDlg.removeControl(oControl)
+			oControl = PoDocDlg.getControl(SLBLLANGUAGES) : oControl.dispose
+			oDlgModel.removeByName(SLBLLANGUAGES) : PoDocDlg.removeControl(oControl)
+		Redim PsCurrentDocSrtLanguages() 
+		PbLanguagesUsed = FALSE
+	End If
+	If PbLogosUsed = TRUE Then
+		oControl = PoDocDlg.getControl(SLSTLOGOS) : oControl.dispose
+		oDlgModel.removeByName(SLSTLOGOS) : PoDocDlg.removeControl(oControl)
+		oControl = PoDocDlg.getControl(SLBLLOGOS) : oControl.dispose
+		oDlgModel.removeByName(SLBLLOGOS) : PoDocDlg.removeControl(oControl)
+		PbLogosUsed = FALSE
+	End If
+	If PbSignedByUsed = TRUE Then
+		oControl = PoDocDlg.getControl(SBUTTONSINGINGBY) : oControl.dispose
+		oDlgModel.removeByName(SBUTTONSINGINGBY) : PoDocDlg.removeControl(oControl)
+		PbSignedByUsed = FALSE
+	End If
+	If PbDataBaseUsed = TRUE Then
+		PbDataBaseUsed = FALSE
+	End If
+	If PbAutoTextUsed = TRUE Then
+		'TODO4Customer - add and remove dynamically
+		'		oControl = PoDocDlg.getControl(SCHECKAUTOTEXT) : oControl.dispose
+		'		oDlgModel.removeByName(SCHECKAUTOTEXT) : PoDocDlg.removeControl(oControl)
+		PbAutoTextUsed = FALSE
+	End If
+	If IsNull(PoDocDlg.getControl("ColumnSep")) = FALSE Then
+		oControl = PoDocDlg.getControl("ColumnSep") : oControl.dispose
+		oDlgModel.removeByName("ColumnSep") : PoDocDlg.removeControl(oControl)
+	End If
+	If IsNull(PoDocDlg.getControl("LineBelowOptions")) = FALSE Then
+		oControl = PoDocDlg.getControl("LineBelowOptions") : oControl.dispose
+		oDlgModel.removeByName("LineBelowOptions") : PoDocDlg.removeControl(oControl)
+	End If
+
+	If UBound(PsDocSoortCurrent) > NDOCDATAFLDSTART-1 Then
+		For i = NDOCDATAFLDSTART to UBound (PsDocSoortCurrent())
+			If Trim(PsDocSoortCurrent(i)) = "" Then
+				' empty value, prolly the doc.ini has a ";" at end of line		
+			Else
+				' Determine label and type of control
+				DetermineControllsLabel_Lines_Type(PsDocSoortCurrent(i), sLabel, sType, nLines, bWideBox)
+				' always set false to prevent problems later with new controls
+				bWideBox = False
+
+				' STEP
+				If Left(PsDocSoortNew(i), 4) = "STEP" Then
+					' skip
+				ElseIf Left(PsDocSoortNew(i), 4) = "HSEP" Then
+					' remove separator
+					oControl = PoDocDlg.getControl(PsDocSoortNew(i))
+					oControl.dispose 	' error on this line when scrolling lstbox to fast :-)
+					oDlgModel.removeByName(PsDocSoortNew(i))
+					PoDocDlg.removeControl(oControl) 			
+				ElseIf Left(PsDocSoortNew(i), 6) = "COLUMN" Then
+					' skip
+				Else			
+					' remove label
+					oControl = PoDocDlg.getControl(sLabel)
+					oControl.dispose 	' error on this line when scrolling lstbox to fast :-)
+					oDlgModel.removeByName(sLabel)
+					PoDocDlg.removeControl(oControl) 
+			
+					' remove text and lst boxes
+					sLabel = "txt" & sLabel
+					oControl = PoDocDlg.getControl(sLabel)
+					oControl.dispose 
+					oDlgModel.removeByName(sLabel)
+					PoDocDlg.removeControl(oControl) 
+				End If
+			End If
+		Next
+	End If
+
+	' array with data for new controls on dlg is known
+	' read data arrays for current doctype from global var
+	s = PsDocSoortenData(nPos)
+	PsDocSoortNew () = Split(s, ";")
+	
+	' also arrays for current docsoort
+	If nPos > uBound(PsDocSoortenNames()) Then
+		' skipp incorrect configuration file for naming documents
+		redim PsCurrentDocSrtName ()  
+'		VariousErrorMessage(GetUIText("Dia_04"), 48)
+	Else
+		s = PsDocSoortenNames (nPos)
+		PsCurrentDocSrtName () = Split(s, ";")
+	End If
+'	s = PsDocSoortenReuseData (nPos)
+'	PsCurrentDocSrtReuseData () = Split(s, ";")
+	s = PsDocSoortenLabels (nPos)
+	PsCurrentDocSrtLabels () = Split(s, ";")
+	If UBound(PsDocSoortenOptions()) > -1 Then
+		s = PsDocSoortenOptions (nPos)
+		PsCurrentDocSrtOptions () = Split(s, ";")
+	End If
+	
+	' reset array current listboxes
+	Redim PsCurrentDocSrtListBoxes(10)
+
+	' item 0 is name template, thus docsoort displayed
+	' item 1 is numeric value, for extra options per document ?
+	' NDOCDATAFLDSTART sets the position where info for the controls starts
+
+	' init values for position and size
+	' so that we can reuse it with STEP and COLUMN
+	yPosTop = 55 : yPosStart = yPosTop 
+	yPos = yPosStart : yPosColumn1 = yPosStart: yPosColumn2 = yPosStart ' separate counting for both columns, do switch!
+	ySize = 11 : ySizeRB = 8  ' RB = radioButton
+	yPosBottomExtra = 36 : ySpacing = 1 : yHSepSpacing = 6 : yHSepSpacingTop = 2
+
+	xPosText = 8
+'	xSizeText = 58 : xPosEdit = 68  ' those are related - xPostText+xSizeText should be < sPosEdit..
+	xSizeText = PnSizeTextWidth
+	xPosEdit = PnPosEditWidth
+	xSizeEdit = PnSizeEditWidth  ' 115
+	
+	xPosTextStart = xPosText
+	xPosEditStart = xPosEdit
+
+	xTo2ndColumn = 4  ' XXXX
+	xEndDlg = 4 ' space right of the controls
+
+	' add controls for options at top
+	If uBound(PsCurrentDocSrtOptions()) < 0 then
+		' no options, do nothing
+	Else
+		If Ubound(PsCurrentDocSrtOptions) > 0 AND Cint (PsCurrentDocSrtOptions(1)) = 1  then ' 0 or 1 (= true)
+			' TODO check for PbUseLocations - may be set FALSE in SetGLobalVars with error in locations file
+			PbLocationsUsed = TRUE
+			
+			' Insert the label
+			sType = "com.sun.star.awt.UnoControlFixedTextModel"
+			createInsertControl(oDlgModel, iTabIndex, SLBLLOCATIONS, sType,_
+		     Array("PositionX", xPosText, "PositionY", yPos, "Width", xSizeText,_
+		     "Height", ySize, "Label", PsLocationsListBoxLabel, "Step", nStep))
+
+			' insert the list box
+			sType = "com.sun.star.awt.UnoControlListBoxModel"
+			createInsertControl(oDlgModel, iTabIndex, SLSTLOCATIONS, sType,_
+		     Array("PositionX", xPosEdit, "PositionY", yPos, "LineCount", 7, "Width", xSizeEdit,_
+		     "Height", ySize, "Enabled", TRUE, "ReadOnly", FALSE, "Dropdown", TRUE, "Step", nStep)) 
+		
+			' load Locations.txt 
+			oControl = PoDocDlg.getControl(SLSTLOCATIONS)
+			'xray ocontrol
+			oControl.addItems(PsAllLocations(), 0)
+			'select previous used value
+			oControl.SelectItem(PsCurrentLocation, True) 'selectItemPos(0, True)
+			' if PsCurrentLocation does not exist, select first one
+			If oControl.SelectedItem = "" then oControl.SelectItemPos(0, TRUE)
+			
+			' set extra y-space
+			'yExtraForTopControls = yExtraForTopControls + ySize + ySpacing
+			yPos = yPos + ySize + ySpacing						
+		End If
+		
+		If len(PsCurrentDocSrtOptions(2)) > 1 then ' must be a string with all languages, delimited by ,
+			' set public var
+			PsCurrentDocSrtLanguages() = Split(PsCurrentDocSrtOptions(2), ",")
+			PbLanguagesUsed = TRUE
+
+			' Insert the label
+			sType = "com.sun.star.awt.UnoControlFixedTextModel"
+			createInsertControl(oDlgModel, iTabIndex, SLBLLANGUAGES, sType,_
+		     Array("PositionX", xPosText, "PositionY", yPos, "Width", xSizeText,_
+		     "Height", ySize, "Label", PsLanguageListBoxLabel, "Step", nStep))
+
+			' insert the list box
+			sType = "com.sun.star.awt.UnoControlListBoxModel"
+			createInsertControl(oDlgModel, iTabIndex, SLSTLANGUAGES, sType,_
+		     Array("PositionX", xPosEdit, "PositionY", yPos, "Width", xSizeEdit,_
+		     "Height", ySize, "Enabled", TRUE, "ReadOnly", FALSE, "Dropdown", TRUE, "Step", nStep)) 
+			' load Locations.txt 
+			oControl = PoDocDlg.getControl(SLSTLANGUAGES)
+			oControl.addItems(PsCurrentDocSrtLanguages(), 0)
+			' TODO4Customer - select previous used value?
+ 			oControl.selectItemPos(0, True)						
+
+			' add listener to act on event
+			CreateLstLanguage_Listener
+ 			oControl.addActionListener(oLanguageListener)
+			
+			' set extra y-space
+			'yExtraForTopControls = yExtraForTopControls + ySize + ySpacing
+			yPos = yPos + ySize + ySpacing
+		End If
+
+		If Ubound(PsCurrentDocSrtOptions) < 6 Then
+		' todo - give some error message ?
+		Else
+			If Cint (PsCurrentDocSrtOptions(3)) = 1  then ' 0 or 1 (= true)
+			' Logos.txt TODO4Customer lstLogos  lblLogos
+			PbLogosUsed = TRUE
+			End If
+			If Cint (PsCurrentDocSrtOptions(4)) = 1  then ' 0 or 1 (= true)
+			' SigningBy cmdOndertekening
+				PbSignedByUsed = TRUE
+			End If
+			If Cint (PsCurrentDocSrtOptions(5)) = 1  then ' 0 or 1 (= true)
+			' AddressData TODO
+				PbDataBaseUsed = TRUE
+			End If
+			If Cint (PsCurrentDocSrtOptions(6)) = 1  then ' 0 or 1 (= true)
+			' AutoText  chkAutotextWindow
+				PbAutoTextUsed = TRUE
+			End If
+		End If
+
+		' disable for editing
+		If PbInitMyDocDialogForEditing Then
+		End If
+
+		' change start yPos, so that 2nd column starts fine too
+		yPosLineBelowOptions = yPos
+		yPos = yPos + 5
+		yPosStart = yPos : yPosColumn1 = yPosStart: yPosColumn2 = yPosStart 
+	End If
+
+	' place the controls for the fields/bookmarks
+	For i = NDOCDATAFLDSTART to UBound (PsDocSoortNew())
+
+		If Trim(PsDocSoortNew(i)) = "" Then
+			' empty value, prolly the doc.ini has a ";" at end of line		
+		Else
+	
+			' STEP / HSEP / COLUMN
+			If Left(PsDocSoortNew(i), 4) = "STEP" Then
+				' only set step, and loop for next i
+				nStep = Right(PsDocSoortNew(i),1)
+				' default = 0, so if no STEP# is in the ini file, all is OK.
+				ShowStepControls(True)
+				' reset y value
+				yPos = yPosStart
+				
+			ElseIf Left(PsDocSoortNew(i), 4) = "HSEP" Then
+				yPos = yPos + yHSepSpacingTop
+				sType = "com.sun.star.awt.UnoControlFixedLineModel"
+				sLabel = PsDocSoortNew(i)
+				createInsertControl(oDlgModel, iTabIndex, sLabel, sType,_
+			     Array("PositionX", xPosText, "PositionY", yPos + 2, "Width", xPosEdit - xPosText + xSizeEdit,_
+			     "Height", 1, "Orientation", 0, "Step", nStep))  'Orientation 0 = horizontal
+			     yPos = yPos + yHSepSpacing 
+	
+			' introduce columns 2015-01-06
+			' the dialog must be wider of course
+			ElseIf Left(PsDocSoortNew(i), 6) = "COLUMN" Then
+				' mark that colums are used, to set dialog width later on
+				bColumnsUsed = TRUE
+				' only set column, and loop for next i
+				nColumn = Right(PsDocSoortNew(i),1)
+				
+				If nColumn = 2 then
+					' adjust values for horizontal positions 
+					xPosText = xPosEditStart + xSizeEdit + xTo2ndColumn + xPosTextStart -8
+					xPosEdit = 2*xPosEditStart + xSizeEdit + xTo2ndColumn -8
+
+					'mark position column 1
+					yPosColumn1 = yPos
+					yPos = yPosColumn2
+				ElseIf nColumn = 1 then ' initial positions				
+					' adjust values for horizontal positions
+					xPosText = xPosTextStart : xPosEdit = xPosEditStart
+
+					'mark position column 2 xxxx
+					yPosColumn2 = yPos
+					If yPosColumn1 > yPosColumn2 then yPosColumn2 = yPosColumn1
+					If yPosColumn2 > yPosColumn1 then yPosColumn1 = yPosColumn2
+					yPos = yPosColumn1
+				End If				
+			Else			
+				' Determine label and type of control
+				DetermineControllsLabel_Lines_Type(PsDocSoortNew(i), sLabel, sType, nLines, bWideBox)
+		
+				' Insert the label
+				createInsertControl(oDlgModel, iTabIndex, sLabel,_
+			     "com.sun.star.awt.UnoControlFixedTextModel",_
+			     Array("PositionX", xPosText, "PositionY", yPos, "Width", xSizeText,_
+			     "Height", ySize, "Label", sLabel, "Step", nStep))
+		
+				' Insert the Controll
+				' check if control has more lines
+				If nLines > 1 Then
+					' multi line!
+					If bWideBox Then
+						bWideBoxUsed = True
+						xSizeEdit = 2*xSizeEdit + xTo2ndColumn + xPosEditStart - 8
+					End If
+
+					' create text box
+				    ySizeMulti =  nLines * 8
+					createInsertControl(oDlgModel, iTabIndex, "txt" & sLabel,_
+				     sType,_
+				     Array("PositionX", xPosEdit, "PositionY", yPos, "Width", xSizeEdit,_
+				     "Height", ySizeMulti, "HScroll", False, "VScroll", False,_
+				       "MultiLine", True, "HardLineBreaks", True, "Step", nStep))
+					If bWideBox Then
+						xSizeEdit = (xSizeEdit - xTo2ndColumn - xPosEditStart + 8)/2
+						bWideBox = false
+					End If		
+					' change values
+					yPos = yPos + ySizeMulti + ySpacing					
+				ElseIf sType = "com.sun.star.awt.UnoControlEditModel" Then				
+					If bWideBox Then
+						bWideBoxUsed = True
+						xSizeEdit = 2*xSizeEdit + xTo2ndColumn + xPosEditStart - 8
+					End If
+					
+					createInsertControl(oDlgModel, iTabIndex, "txt" & sLabel,_
+				     sType,_
+				     Array("PositionX", xPosEdit, "PositionY", yPos, "Width", xSizeEdit,_
+				     "Height", ySize, "HScroll", False, "VScroll", False,_
+				       "MultiLine", False, "HardLineBreaks", False, "Step", nStep))
+				       
+					If bWideBox Then
+						xSizeEdit = (xSizeEdit - xTo2ndColumn - xPosEditStart + 8)/2
+						bWideBox = false
+					End If
+					yPos = yPos + ySize + ySpacing		
+				ElseIf sType = "com.sun.star.awt.UnoControlListBoxModel" Then
+					' create list box
+					' http://api.openoffice.org/docs/common/ref/com/sun/star/awt/UnoControlListBoxModel.html
+					createInsertControl(oDlgModel, iTabIndex, "txt" & sLabel,_
+				     sType,_
+				     Array("PositionX", xPosEdit, "PositionY", yPos, "Width", xSizeEdit,_
+				     "Height", ySize, "Enabled", TRUE, "ReadOnly", FALSE, "Dropdown", TRUE, "Step", nStep)) 
+					' change values
+					yPos = yPos + ySize + ySpacing
+		
+'					Redim at the end
+					PsCurrentDocSrtListBoxes(nListBoxes) = sLabel
+					nListBoxes = nListBoxes + 1
+				ElseIf sType = "com.sun.star.awt.UnoControlRadioButtonModel" Then
+				'   only by a consecutive tab index the option buttons are linked..
+					If i - iLstRadioButton > 1 Then
+						' 1st in a group - make that this one is selected
+						' test the next in stead of iTabIndex, it is incremented in the function that creates the control
+						nIndexRadioButtonTst = 10
+						rState = 1
+						iLstRadioButton = i
+					Else
+						rState = 0
+						iLstRadioButton = i
+					End If
+					If PbInitMyDocDialogForEditing Then pEnableWithEditing = FALSE
+					createInsertControl(oDlgModel, nIndexRadioButtonTst, "txt" & sLabel,_
+				     sType,_
+				     Array("PositionX", xPosEdit+5, "PositionY", yPos, "Width", xSizeEdit,_
+				     "Height", ySize, "Enabled", pEnableWithEditing, "State", rState, "Step", nStep, "Tabstop", TRUE)) 
+					' change values
+					yPos = yPos + ySizeRB + ySpacing
+					
+				' http://api.libreoffice.org/docs/idl/ref/XCheckBox_8idl.html
+				' http://api.libreoffice.org/docs/idl/ref/interfacecom_1_1sun_1_1star_1_1awt_1_1XCheckBox.html#details
+				ElseIf sType = "com.sun.star.awt.UnoControlCheckBoxModel" Then
+					If PbInitMyDocDialogForEditing Then pEnableWithEditing = FALSE
+					createInsertControl(oDlgModel, iTabIndex, "txt" & sLabel,_
+				     sType,_
+				     Array("PositionX", xPosEdit+5, "PositionY", yPos, "Width", xSizeEdit,_
+				     "Height", ySize, "Enabled", pEnableWithEditing, "Step", nStep)) 
+					' change values
+					yPos = yPos + ySize + ySpacing
+				End If
+				' keep value for resizing dialog
+				If yPos > yPosMax Then yPosMax = yPos
+			' STEP
+			End If
+		End If
+'		iTabIndex = iTabIndex +1
+	Next
+
+	' trim this list, initial 10 must be too high
+	If nListBoxes > 0 then nListBoxes = nListBoxes-1
+	Redim Preserve PsCurrentDocSrtListBoxes(nListBoxes)
+	
+	' TODO with global var and also the extra functions! If steps, then activate!
+'	If nStep > 0 then 
+'		PageStep1
+'	Else
+'		ShowStepControls(False)
+'	End If
+
+	' change height of dialog
+	oDlgModel.Height = yPosMax + yPosBottomExtra
+	
+	If bColumnsUsed Then 
+		oDlgModel.Width = 2*xPosEditStart + 2*xSizeEdit + xTo2ndColumn + xEndDlg -6
+		If Not bWideBoxUsed Then
+		' add vertical line
+			sType = "com.sun.star.awt.UnoControlFixedLineModel"
+			createInsertControl(oDlgModel, iTabIndex, "ColumnSep", sType,_
+		     Array("PositionX", xPosEditStart+xSizeEdit+xTo2ndColumn/2, "PositionY", yPosLineBelowOptions + 4, "Width", 1,_
+		     "Height", yPosMax-yPosLineBelowOptions, "Orientation", 1, "Step", nStep))  'Orientation 0 = horizontal
+		End If
+	Else
+		oDlgModel.Width = xPosEditStart + xSizeEdit + xEndDlg +3' xxxx
+	End If
+
+	If yPosLineBelowOptions > 0 then
+		sType = "com.sun.star.awt.UnoControlFixedLineModel"
+		createInsertControl(oDlgModel, iTabIndex, "LineBelowOptions", sType,_
+	     Array("PositionX", xPosTextStart, "PositionY", yPosLineBelowOptions + 2, "Width", oDlgModel.Width -16,_
+	     "Height", 1, "Orientation", 0, "Step", nStep))  'Orientation 0 = horizontal
+	End If	
+	'option	
+'	PoDocDlg.getControl(SCHECKAUTOTEXT).getModel.PositionY = yPosMax +15
+	PoDocDlg.getControl("cmdOK").getModel.PositionY = yPosMax +8
+	PoDocDlg.getControl("cmdOK").getModel.PositionX = oDlgModel.Width  -91
+	PoDocDlg.getControl("cmdCancel").getModel.PositionY = yPosMax +8
+	PoDocDlg.getControl("cmdCancel").getModel.PositionX = oDlgModel.Width -49
+	PoDocDlg.GetControl("cntrlByNouenOff").getModel.PositionY = yPosMax +12
+	PoDocDlg.GetControl("txtProductStatus").getModel.PositionY = yPosMax +28
+	PoDocDlg.GetControl("txtProductStatus").getModel.PositionX = oDlgModel.Width -146
+	PoDocDlg.GetControl("HLine1").getModel.Width = oDlgModel.Width -16
+	' make new dialog names known as current
+	' thus they can be removed next time
+	PsDocSoortCurrent () = PsDocSoortNew ()
+
+	oControl = PoDocDlg.GetControl("ctrlBusinessLogo")
+	oControl.getModel.positionx = PoDocDlg.getModel.Width - oControl.getModel.Width - 7
+
+	' somehow tabindex gets broken, fix that
+	FixDialogsTabIndex	
+
+	'option, related to neohsdoc.ini
+	' show Standaardteksten optie for some documents
+'	If UCase(PsDocSoortNew(1)) = "JA" then 
+'		PoDocDlg.GetControl(SCHECKAUTOTEXT).setVisible(TRUE)	
+'	Else
+'		PoDocDlg.GetControl(SCHECKAUTOTEXT).setVisible(FALSE)
+'	End If
+	
+	For i = 0 to Ubound (PsCurrentDocSrtListBoxes)
+		nRslt = FillListControlIfAvailable(PsCurrentDocSrtListBoxes(i))
+		If nRslt = - 2 then
+			If sMissingLists = "" Then
+				sMissingLists = PsCurrentDocSrtListBoxes(i)
+			Else
+				sMissingLists = sMissingLists & ", "& PsCurrentDocSrtListBoxes(i)
+			End IF
+		Else
+		End If
+	Next i
+	If sMissingLists <> "" Then
+		VariousErrorMessage(GetUIText("Dia_05") & Chr(13) & GetUIText("Dia_05") & sMissingLists & "'.", 48)
+	End If
+
+	' default user name from Tools > Options
+	FillHandlerInDialog()
+	' settings.ini
+	FillDateInDialog()
+	' neohsUserdata.txt
+	FillDocUserData
+
+	' again enable lstDocsorten
+	oLstCtrlModel.Enabled = TRUE
+	oLstCtrl.setFocus
+
+Exit Sub
+ErrorHandler:
+	MyErrMessenger("lstDocSoorten_Change")
+End Sub
+'====================================================
+' Name        :  FixDialogsTabIndex
+' Description :  somehow tabindex gets broken, fix that
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub FixDialogsTabIndex
+
+On Error GoTo ErrorHandler
+
+		'set tabIndex for at 0
+		PoDocDlg.getControl("lstDocSoorten").getModel.TabIndex = 0
+		
+		' set for the next ones at 100, e.g. pushing to the end
+		If PbLocationsUsed Then
+			PoDocDlg.getControl(SLBLLOCATIONS).getModel.TabIndex = 100
+			PoDocDlg.getControl(SLSTLOCATIONS).getModel.TabIndex = 100
+		End If
+		If UBound(PsCurrentDocSrtLanguages()) > 0 Then 'PbLanguagesUsed Then
+			PoDocDlg.getControl(SLBLLANGUAGES).getModel.TabIndex = 100
+			PoDocDlg.getControl(SLSTLANGUAGES).getModel.TabIndex = 100
+		End If
+		PoDocDlg.getControl("cmdOK").getModel.TabIndex = 100
+		PoDocDlg.getControl("cmdCancel").getModel.TabIndex = 100
+		PoDocDlg.getControl("cmd_FAV").getModel.TabIndex = 100
+		PoDocDlg.getControl("cmd_ALL").getModel.TabIndex = 100
+		PoDocDlg.getControl("cmd_ODS").getModel.TabIndex = 100
+		PoDocDlg.getControl("cmd_ODP").getModel.TabIndex = 100
+		PoDocDlg.getControl("cmd_ODG").getModel.TabIndex = 100
+		PoDocDlg.getControl("ctrlBusinessLogo").getModel.TabIndex = 100
+		PoDocDlg.getControl("cntrlByNouenOff").getModel.TabIndex = 100
+		PoDocDlg.getControl("txtProductStatus").getModel.TabIndex = 100
+		PoDocDlg.getControl("chkAutoText").getModel.TabIndex = 100
+		PoDocDlg.getControl("cmdSigningBy").getModel.TabIndex = 100
+		PoDocDlg.getControl("HLine1").getModel.TabIndex = 100
+
+
+Exit Sub
+ErrorHandler:
+	MyErrMessenger("FixDialogsTabIndex")
+End Sub
+'====================================================
+' © Cor Nouws - Nou&Off
+' Name        :  DetermineControllsLabel_Lines_Type
+' Description :  Analyses string from ini and from rules determines label, lines, type, width
+' Arguments   :  sLabel, sType, nLines, all by reference, bWideBox
+' Returns     :  
+'----------------------------------------------------
+Sub DetermineControllsLabel_Lines_Type(sNameFromIni$, sLabel$, sType$, nLines%, bWideBox as Boolean)
+
+On Error GoTo ErrorHandler	
+
+	' handle case with _W double wide controls
+	If Right(sNameFromIni, 2) = "_W" Then
+		bWideBox = true
+		sNameFromIni = Left(sNameFromIni, len(sNameFromIni) -2)
+	End If
+
+	If IsNumeric(Right(sNameFromIni, 1)) Then
+		nLines = Right(sNameFromIni, 1)
+		sLabel = Left(sNameFromIni,Len(sNameFromIni)-1)
+		sType = "com.sun.star.awt.UnoControlEditModel"
+	ElseIf Right(sNameFromIni, 2) = "_L" Then  ' list control
+		nLines = 1
+		sLabel = Left(sNameFromIni,Len(sNameFromIni)-2)
+		sType = "com.sun.star.awt.UnoControlListBoxModel"
+	ElseIf Right(sNameFromIni, 2) = "_R" Then  ' radio button
+		nLines = 1
+		sLabel = Left(sNameFromIni,Len(sNameFromIni)-2)
+		sType = "com.sun.star.awt.UnoControlRadioButtonModel"
+	ElseIf Right(sNameFromIni, 2) = "_C" Then
+		nLines = 1
+		sLabel = Left(sNameFromIni,Len(sNameFromIni)-2)
+		sType = "com.sun.star.awt.UnoControlCheckBoxModel"
+	Else  ' choose default, also special case _W
+		nLines = 1
+		sLabel = sNameFromIni
+		sType = "com.sun.star.awt.UnoControlEditModel"
+	End If
+	
+Exit Sub
+ErrorHandler:
+	MyErrMessenger("DetermineControllsLabel_Lines_Type")
+End Sub
+'====================================================
+' Name        :  createInsertControl
+' Description :  Inserts new control in dlg
+' Arguments   :  oDlgModel, Tabindex, name, type and properties
+' Returns     :  
+'----------------------------------------------------
+Sub createInsertControl(oDlgModel, index%, sName$, sType$, props())
+	Dim oCtrl
+
+On Error GoTo ErrorHandler
+
+	oCtrl = oDlgModel.createInstance(sType)
+	setProperties (oCtrl, props())
+	setProperties (oCtrl, Array("Name", sName, "TabIndex", index))
+	oDlgModel.insertByName (sName, oCtrl)
+  
+	' count index value
+	' don't update it for labels and lines ??
+'	If sType <> "com.sun.star.awt.UnoControlFixedTextModel" AND sType <> "com.sun.star.awt.UnoControlFixedLineModel" Then
+		index = index + 1
+'	End If
+	
+Exit Sub
+ErrorHandler:
+  Msgbox "Error in createInsertControl at sName = " & sName & CHR(13) & CHR(13)_
+		& Error() & CHR(13) & " on line " & Erl, 16, SMSGTITEL
+End Sub
+'====================================================
+' Name        :  setProperties
+' Description :  Set properties based on an array of name/value pairs
+' Arguments   :  Control object model and properties
+' Returns     :  
+'----------------------------------------------------
+Sub setProperties(oCtrlModel, props())
+	Dim i%
+On Error GoTo ErrorHandler
+	For i = LBound(props()) To UBound(props()) Step 2
+		oCtrlModel.setPropertyValue(props(i), props(i+1))
+	Next
+Exit Sub
+ErrorHandler:
+  Msgbox "Error in setProperties at i = " & i & " en props = " & props(i) & CHR(13) & CHR(13)_
+		& Error() & CHR(13) & "on line " & Erl, 16, SMSGTITEL
+End sub
+'====================================================
+' Name        :  lstLanguage_Change
+' Description :  event selecting different language in docDialog
+'                updates lists and date for choosen language
+' Arguments   :  -
+' Returns     :  
+'----------------------------------------------------
+Sub lstLanguage_Change
+	Dim sLanguage$
+	Dim i%
+	Dim oCtrl
+	Dim sName$, sIniName$
+	Dim sDataFromIni() as String
+	
+On Error goto ErrorHandler
+
+	' we can do this with dlgOK too, but time is cheap now
+	If PbLocationsUsed Then
+		PsCurrentLocation = PoDocDlg.getControl(SLSTLOCATIONS).SelectedItem
+		LoadCurrentLocationData
+		' write current location
+		WriteVarToOneLineIni(PsUserPath & PSCURRENTLOCATIONFILE, PsCurrentLocation)
+	End If
+
+ 	LoadCurrentLanguage
+ 	LoadCurrentLanguageNumber 
+	If PnCurrentLanguageNr = 0 Then
+		sLanguage = ""
+	Else
+		sLanguage = "_" & PsCurrentLanguage
+	End If
+
+	For i = 0 to uBound(PsCurrentDocSrtListBoxes())
+		sName = PsCurrentDocSrtListBoxes(i)
+		oCtrl = PoDocDlg.GetControl("txt" & sName)
+		sIniName = SLISTSINISTART & LCase(sName) &  sLanguage & ".ini"
+		sDataFromIni = FillArrayFromOneLineIni(PsIniPath & sIniName)
+		' 2010-04-22 extra check
+		If Not IsNull(sDataFromIni) < 0 then ' possibly no translations available/needed, then simply do nothing
+			oCtrl.removeItems(0, uBound(oCtrl.getItems)+1)
+			oCtrl.addItems(sDataFromIni(), 0)
+		End If
+	Next
+
+	' update date fields for language
+	FillDateInDialog
+
+Exit sub
+ErrorHandler:
+	MyErrMessenger ("lstLanguage_Change")
+End Sub
+
+'= = = = = = TODO
+
+'=========================================================================
+' Nou&Off     |     2010-07-25    |    www.nouenoff.nl
+' Name        :  SetCheckExtraLogoForDoc
+' Description :  dependning on selected doc: allow chosing extra logo
+' Arguments   :  integer, position in lstDocSoorten
+' Returns     :  
+'-------------------------------------------------------------------------
+Sub SetCheckExtraLogoForDoc(nPos%)
+	Dim s$	
+	Dim oCntrl
+	
+	s = Trim(PsDocSoortNew(2)) 
+	oCntrl = PoDocDlg.GetControl("chkExtraLogo")
+	
+	' PsDocTalen 1 = afdnamen / 2 = logo naam
+	If s = "" Then ' no logo for this docsoort
+		oCntrl.setEnable("False")
+		oCntrl.Label = "(geen extra logo mogelijk)"
+	Else
+		oCntrl.setEnable("True") 
+		oCntrl.Label = s
+	End If
+
+End sub
+
+' = = = = = STEPS
+Sub ShowStepControls(bShow)
+'xray PoDocDlg.getControl("lblStep1")
+	PoDocDlg.getControl("lblStep1").Visible = bShow
+	PoDocDlg.getControl("lblStep2").Visible = bShow
+	PoDocDlg.getControl("FixedLine1").Visible = bShow
+	PoDocDlg.getControl("FixedLine2").Visible = bShow
+	PoDocDlg.getControl("FixedLine3").Visible = bShow
+	PoDocDlg.getControl("FixedLine4").Visible = bShow
+	
+End Sub
+'=========================================================================
+' ©  Nou&Off     |    2008-01-31    |    ©  www.nouenoff.nl
+' Name        :  PageStep1/2
+' Description :  Step property of dialog
+' Arguments   :  -
+' Returns     :  
+'-------------------------------------------------------------------------
+Sub PageStep1
+	Dim oCtrl0, oCtrl1
+
+	oCtrl0=PoDocDlg.getControl("lblStep1").getModel
+	oCtrl0.setPropertyValue("Border", 5)
+	oCtrl0.setPropertyValue("FontWeight" , 150)
+
+	oCtrl1=PoDocDlg.getControl("lblStep2").getModel
+	oCtrl1.setPropertyValue("Border", -1) '-1 = geen rand, 1 = 3d, 2,3,6,7 = rand, 4,5 dikke rand, 8,9 = 3d erop
+	oCtrl1.setPropertyValue("FontWeight" , 1)
+
+'	PoDocDlg.getControl("cmdOK").getModel.setPropertyValue("PositionY", 328)
+'	PoDocDlg.getControl("cmdAnnuleer").getModel.setPropertyValue("PositionY", 328)
+	PoDocDlg.getModel.Step = 1	
+	
+	SetOptionControlsDefault
+		
+End Sub
+Sub PageStep2
+	Dim oCtrl0, oCtrl1
+	
+	oCtrl0=PoDocDlg.getControl("lblStep1").getModel
+	oCtrl0.setPropertyValue("Border", -1)
+	oCtrl0.setPropertyValue("FontWeight" , 1)
+
+	oCtrl1=PoDocDlg.getControl("lblStep2").getModel
+	oCtrl1.setPropertyValue("Border", 4) '-1 = geen rand, 1 = 3d, 2,3,6,7 = rand, 4,5 dikke rand, 8,9 = 3d erop
+	oCtrl1.setPropertyValue("FontWeight" , 200)
+	
+'	PoDocDlg.getControl("cmdOK").getModel.setPropertyValue("PositionY", 238)
+'	PoDocDlg.getControl("cmdAnnuleer").getModel.setPropertyValue("PositionY", 238)
+	PoDocDlg.getModel.Step = 2
+	
+	SetOptionControlsDefault
+	
+End Sub
+

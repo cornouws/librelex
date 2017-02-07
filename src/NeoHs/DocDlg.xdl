@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:style-id="2" dlg:id="DocDlg" dlg:left="60" dlg:top="40" dlg:width="215" dlg:height="245" dlg:closeable="true" dlg:moveable="true" dlg:title="xxx Huisstijl">
+ <dlg:styles>
+  <dlg:style dlg:style-id="0" dlg:border="none"/>
+  <dlg:style dlg:style-id="1" dlg:text-color="0x808080" dlg:font-height="9" dlg:font-slant="italic"/>
+  <dlg:style dlg:style-id="2" dlg:background-color="0xfa2dee"/>
+ </dlg:styles>
+ <dlg:bulletinboard>
+  <dlg:button dlg:id="cmdOK" dlg:tab-index="1" dlg:left="115" dlg:top="204" dlg:width="41" dlg:height="16" dlg:default="true" dlg:value="~OK" dlg:button-type="ok"/>
+  <dlg:button dlg:id="cmdCancel" dlg:tab-index="2" dlg:left="157" dlg:top="204" dlg:width="41" dlg:height="16" dlg:value="~Annuleer" dlg:button-type="cancel"/>
+  <dlg:menulist dlg:id="lstDocSoorten" dlg:tab-index="0" dlg:left="10" dlg:top="34" dlg:width="111" dlg:height="12" dlg:spin="true" dlg:linecount="8">
+   <script:event script:event-name="on-itemstatechange" script:macro-name="vnd.sun.star.script:NeoHs.Dialog.lstDocSoorten_Change?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:menulist>
+  <dlg:img dlg:style-id="0" dlg:id="ctrlBusinessLogo" dlg:tab-index="3" dlg:left="138" dlg:top="5" dlg:width="45" dlg:height="30"/>
+  <dlg:img dlg:id="cntrlByNouenOff" dlg:tab-index="4" dlg:left="3" dlg:top="213" dlg:width="32" dlg:height="20"/>
+  <dlg:button dlg:id="cmd_ODS" dlg:tab-index="7" dlg:left="47" dlg:top="11" dlg:width="15" dlg:height="20" dlg:image-src="file:///home/cono/Documenten/DATA/Nou&amp;Off/Projecten/EigenProjecten/NeoHs/Versies/NeoHs_demo_packaging/icons/ods.png" dlg:repeat="50">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog.cmd_ODS_Click?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:button dlg:id="cmd_ALL" dlg:tab-index="6" dlg:left="29" dlg:top="11" dlg:width="15" dlg:height="20" dlg:image-src="file:///home/cono/Documenten/DATA/Nou&amp;Off/Projecten/EigenProjecten/NeoHs/Versies/NeoHs_demo_packaging/icons/all.png" dlg:repeat="50" dlg:toggled="1">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog.cmd_ALL_Click?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:button dlg:id="cmd_FAV" dlg:tab-index="5" dlg:left="11" dlg:top="11" dlg:width="15" dlg:height="20" dlg:image-src="file:///home/cono/Documenten/DATA/Nou&amp;Off/Projecten/EigenProjecten/NeoHs/Versies/NeoHs_demo_packaging/icons/fav.png" dlg:repeat="50" dlg:toggled="1">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog.cmd_FAV_Click?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:button dlg:id="cmd_ODP" dlg:tab-index="8" dlg:left="65" dlg:top="11" dlg:width="15" dlg:height="20" dlg:image-src="file:///home/cono/Documenten/DATA/Nou&amp;Off/Projecten/EigenProjecten/NeoHs/Versies/NeoHs_demo_packaging/icons/odp.png" dlg:repeat="50">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog.cmd_ODP_Click?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:button dlg:id="cmd_ODG" dlg:tab-index="9" dlg:left="83" dlg:top="11" dlg:width="15" dlg:height="20" dlg:image-src="file:///home/cono/Documenten/DATA/Nou&amp;Off/Projecten/EigenProjecten/NeoHs/Versies/NeoHs_demo_packaging/icons/odg.png" dlg:repeat="50">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog.cmd_ODG_Click?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:text dlg:style-id="1" dlg:id="txtProductStatus" dlg:tab-index="10" dlg:left="61" dlg:top="222" dlg:width="137" dlg:height="10" dlg:value="Label1" dlg:align="right"/>
+  <dlg:fixedline dlg:id="HLine1" dlg:tab-index="13" dlg:left="9" dlg:top="50" dlg:width="177" dlg:height="2"/>
+  <dlg:checkbox dlg:id="chkAutoText" dlg:tab-index="11" dlg:disabled="true" dlg:left="-41" dlg:top="192" dlg:width="32" dlg:height="12" dlg:value="Venster Standaardteksten" dlg:checked="false"/>
+  <dlg:button dlg:id="cmdSigningBy" dlg:tab-index="12" dlg:disabled="true" dlg:left="-47" dlg:top="213" dlg:width="41" dlg:height="16" dlg:value="O~ndertekening">
+   <script:event script:event-name="on-keyup" script:macro-name="vnd.sun.star.script:NeoHs.Starters.StartOndtKeuzeVenster?language=Basic&amp;location=application" script:language="Script"/>
+   <script:event script:event-name="on-mouseup" script:macro-name="vnd.sun.star.script:NeoHs.Starters.StartOndtKeuzeVenster?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+ </dlg:bulletinboard>
+</dlg:window>

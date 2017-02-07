@@ -1,0 +1,432 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Option Explicit
+
+'-------------------------------------------------------------------------
+Sub Main_Test
+	Globalscope.BasicLibraries.LoadLibrary("XrayTool")
+' 	StrtDocKeuzeVenster
+	'LoadMyDocTypesInPublicVar
+	'StartOndtKeuzeVenster
+	'StrtDocKeuzeVenster
+'	StrtImpressDocument	
+	'ShowHS_Versie
+End Sub
+'====================================================
+' Name        :  ShowHS_Versie
+' Description :  
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub ShowHS_Versie
+		
+	Globalscope.BasicLibraries.LoadLibrary("Tools")
+	DialogLibraries.LoadLibrary("NeoHs")
+	PoAnyDlg = CreateUnoDialog(DialogLibraries.NeoHs.InfoDlg)
+
+	If InitVersionDialog = 1 then
+		PoAnyDlg.Execute ()
+	Else
+	End If
+	PoAnyDlg.dispose ()
+	
+End Sub
+'====================================================
+' Name        :  CheckIfPilotIsStillRunning
+' Description :  checks current date with global constant, data, set for pilot
+' Arguments   :  -
+' Returns     :  boolean
+'----------------------------------------------------
+Function CheckIfPilotIsStillRunning as Boolean
+	Dim d as Date
+	
+	If PL_STOPNOW > 0 Then
+		d = Date
+		If CLng(Cstr(Year(d))+Cstr(Month(d))+Cstr(Day(d))) - PL_STOPNOW < 0 then
+			CheckIfPilotIsStillRunning = TRUE
+		Else
+			CheckIfPilotIsStillRunning = FALSE
+			VariousErrorMessage(GetUIText("Sta_01"), 16)
+		EndIf
+	Else
+		CheckIfPilotIsStillRunning = TRUE
+	EndIf
+
+End Function
+'====================================================
+' Name        :  StartPlacing
+' Description :  
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub StartPlacing
+	Globalscope.BasicLibraries.LoadLibrary("Tools")
+	DialogLibraries.LoadLibrary("NeoHs")
+	PoAnyDlg = CreateUnoDialog(DialogLibraries.NeoHs.PlaceDlg)
+
+	If InitPlaceDlg = 1 then
+'	PoAnyDlg.Execute ()
+		If PoAnyDlg.Execute () = 1 then
+			PlaceTheFile
+'			msgBox "....."
+		End If
+	Else
+	End If
+	PoAnyDlg.dispose ()
+
+End Sub
+'====================================================
+' Name        :  StartMailing
+' Description :  
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub StartMailing
+
+	Globalscope.BasicLibraries.LoadLibrary("Tools")
+	DialogLibraries.LoadLibrary("NeoHs")
+	PoAnyDlg = CreateUnoDialog(DialogLibraries.NeoHs.MailDlg)
+
+
+	If InitMailDlg = 1 then
+'	PoAnyDlg.Execute ()
+		If PoAnyDlg.Execute () = 1 then
+			If PoAnyDlg.GetControl("optPDF").getState then
+				StartMailenAlsPDF
+			ElseIf PoAnyDlg.GetControl("optODF").getState then
+				StartMailenAlsODF
+			Else PoAnyDlg.GetControl("optMS").getState
+				StartMailingAsMSFormat
+			End If
+		End If
+	Else
+	End If
+
+	PoAnyDlg.dispose ()
+'	PoAnyDlg.GetControl("imgLogo").getModel.HelpText = GetUIText("Dia_010")
+
+End Sub
+'====================================================
+' Name        :  StartPrinting
+' Description :  
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub StartPrinting
+	Globalscope.BasicLibraries.LoadLibrary("Tools")
+	DialogLibraries.LoadLibrary("NeoHs")
+	PoAnyDlg = CreateUnoDialog(DialogLibraries.NeoHs.PrintDlg)
+
+	If InitPrintDlg = 1 then
+		If PoAnyDlg.Execute() = 1 Then
+			If PoAnyDlg.GetControl("optStandard").getState then
+				'StartPrintenStandard		
+			ElseIf PoAnyDlg.GetControl("optBlanc").getState then
+				StartPrintenBlanco
+			Else PoAnyDlg.GetControl("optLogo").getState
+				StartPrintenNet
+			End If
+		End If
+	Else
+	End If
+	PoAnyDlg.dispose ()
+
+End Sub
+'====================================================
+' Name        :  StartOpslaanAlsPDF
+' Description :  
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub StartOpslaanAlsPDF
+	Dim oDoc, oDispatcher
+
+	oDoc = ThisComponent.CurrentController.Frame
+	oDispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+	PlaatjesWelAfdrukken()
+	' TODO4Customer eerst opties venster??
+	oDispatcher.executeDispatch(oDoc, ".uno:ExportDirectToPDF", "", 0, Array())
+	PlaatjesNietAfdrukken()
+	
+End Sub
+'====================================================
+' Name        :  StartOpslaanGewoonEnAlsPDF
+' Description :  
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub StartOpslaanGewoonEnAlsPDF
+	Dim oDoc, oDispatcher
+
+	oDoc = ThisComponent.CurrentController.Frame
+	oDispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+
+	If ThisComponent.HasLocation Then 
+		oDispatcher.executeDispatch(oDoc, ".uno:Save", "", 0, Array()) 	
+	Else
+		oDispatcher.executeDispatch(oDoc, ".uno:SaveAs", "", 0, Array()) 	
+	End If
+	
+	PlaatjesWelAfdrukken()
+	oDispatcher.executeDispatch(oDoc, ".uno:ExportDirectToPDF", "", 0, Array())
+	PlaatjesNietAfdrukken()	
+	
+End Sub
+'====================================================
+' Name        :  StartMailenAlsXXX
+' Description :  
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub StartMailenAlsODF
+
+	PlaatjesWelAfdrukken()
+	EmailDirectAlsODF
+	
+End Sub
+'----------------------------------------------------
+Sub StartMailenAlsPDF
+
+	PlaatjesWelAfdrukken()
+	EmailDirectAlsPDF()
+	
+End Sub
+'----------------------------------------------------
+Sub StartMailingAsMSFormat
+
+	PlaatjesNietAfdrukken()
+	EmailDirectAsMSFormat()
+	
+End Sub
+'====================================================
+' Name        :  StartPrintenNet
+' Description :  
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub StartPrintenNet
+	
+	SetGlobalVars()
+	PlaatjesNietAfdrukken()
+
+	If PsLogoPaperTray <> "" Then SetPaperTrayForPageStyles (ThisComponent, PsLogoPaperTray)
+	ToonPrinterDialoog()
+	
+End Sub
+'----------------------------------------------------
+Sub StartPrintenBlanco
+	
+	SetGlobalVars()
+	PlaatjesWelAfdrukken()
+
+	If PsBlancPaperTray <> "" Then SetPaperTrayForPageStyles (ThisComponent, PsBlancPaperTray)
+	ToonPrinterDialoog()
+	
+End Sub
+'====================================================
+' Name        :  StrtDocKeuzeVenster
+' Description :  Macro to start making documents
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub StrtDocKeuzeVenster()
+	Dim nRslt% 
+	Dim oDoc
+	Dim xFields as object
+	
+	If NOT CheckIfPilotIsStillRunning Then Exit Sub
+	
+	If SetGlobalVars() = -1 Then
+		' also checks if PsLocationsFileName is available
+		Exit Sub
+	End If
+	
+	ReadOndtDataFromOptions()
+	
+	' check custom specific conditions
+	If CUST_DoCustomCheckAtStart <> 1 Then Exit Sub
+	
+	Globalscope.BasicLibraries.LoadLibrary("Tools")
+	DialogLibraries.LoadLibrary("NeoHs")
+	PoDocDlg = CreateUnoDialog(DialogLibraries.NeoHs.DocDlg)
+
+	nRslt = InitMyDocDialog () 
+	If nRslt = 1 then ' OK
+		If PoDocDlg.Execute () = 1 then
+
+			If MakeNewDoc() <> 1 Then 
+				' Error message in other function
+				Exit Sub
+			End If
+			
+			' Put values from Dialog in Document
+			oDoc = ThisComponent
+			FillThisDocData (oDoc)
+			
+			' velden bijwerken in Writer docs
+			If oDoc.SupportsService("com.sun.star.text.TextDocument") Then
+				' ga naar startpositie van document
+				nRslt = GoToMyBookmark (oDoc, PsStartPosBM, False)
+
+				xFields = oDoc.getTextFields()
+				xFields.refresh
+			End If
+
+			' sla document op, maar check of het een naam moet hebben
+			' PsCurrentDocSrtName has not been loaded, error in config?
+			If uBound(PsCurrentDocSrtName()) > 1 Then
+				If UCase(PsCurrentDocSrtName(2))<>SNONAMEFORDOCTYPE Then SaveThisDocument(oDoc)
+			End If
+		Else
+			' Cancel - Do Nothing
+		End If
+	ElseIf nRslt = - 2 Then
+		' do nothing, no message
+	Else
+		VariousErrorMessage(GetUIText("Sta_03"), 48)
+	End If
+	
+'	Dim oCtrl
+'	oCtrl = PoDocDlg.GetControl(SCHECKAUTOTEXT)
+'	If oCtrl.getState then
+'		StrtStandaardTekstVenster(PsAutoTextPosBM)
+'	End If
+		   
+	PoDocDlg.dispose ()
+	
+End Sub
+'====================================================
+' Name        :  StartEditingDoc
+' Description :  Macro to start Editing existing document
+'             :  Editing only for Writer documents
+' Returns     :  -
+'----------------------------------------------------
+Sub StartEditingDoc ()
+	Dim i%
+	Dim oDoc
+	Dim xFields as Object
+	
+	If SetGlobalVars < 1 Then
+		VariousErrorMessage(GetUIText("Sta_04"), 48)
+		Exit Sub
+	End If
+	
+	oDoc = ThisComponent
+	' velden bijwerken in Writer docs
+	If Not oDoc.SupportsService("com.sun.star.text.TextDocument") Then
+		VariousErrorMessage(GetUIText("Sta_05") , 48)
+	Exit Sub	
+	End If
+	If Not PbThisIsHuisstijlDoc then
+		If Not LoadMyDocTypesInPublicVar then
+			VariousErrorMessage(GetUIText("Sta_05"), 48)
+			Exit Sub
+		End If
+	End If
+
+	'set global var, needed to read PnCurrentUnit
+	PbExistingDoc = TRUE
+	Globalscope.BasicLibraries.LoadLibrary("Tools")
+	DialogLibraries.LoadLibrary("NeoHs")
+	PoDocDlg = CreateUnoDialog(DialogLibraries.NeoHs.DocDlg)
+	
+	If InitMyDocDialogForEditing () = 1 then ' OK
+		If PoDocDlg.Execute () = 1 then
+			
+			' Put values from Dialog in Document
+			FillThisDocData (oDoc)
+
+			' velden bijwerken in Writer docs
+			If oDoc.SupportsService("com.sun.star.text.TextDocument") Then
+				xFields = oDoc.getTextFields()
+				xFields.refresh
+			End If
+		Else
+			' Cancel - Do Nothing
+		End If
+	Else
+		VariousErrorMessage(GetUIText("Sta_03"), 48)
+	End If
+		   
+	PoDocDlg.dispose ()
+
+End Sub
+'====================================================
+' Name        :  MakeNewDoc
+' Description :  Starts new document
+' Arguments   :  
+' Returns     :  1 if OK, -1 if not OK
+'----------------------------------------------------
+Private Function MakeNewDoc () As Integer
+	Dim args(0) as new com.sun.star.beans.PropertyValue
+	Dim sTemplate$, sTemplatePath$, sTemplateName$, sFileName$
+	Dim Url$
+	Dim oControl, oNewDoc
+	Dim nRslt%
+	
+On Error GoTo ErrorHandler
+
+	' get template name
+	oControl = PoDocDlg.GetControl("lstDocSoorten")
+	' now we want the template name, not the display name
+	sTemplateName = PsDocSoorten(oControl.selectedItemPos()) & "." & PsDocType
+		
+	Select Case PsDocType
+	Case "all" ' all indicates category .odt and all and fav
+		' ott also is used for AnyType document
+		sTemplatePath = PsottTemplatePath
+		If right(sTemplateName, 3) = "all" then sTemplateName = left(sTemplateName, len(sTemplateName)-3) & "ott"
+	Case "ots"
+		sTemplatePath = PsotsTemplatePath
+	Case "otp"
+		sTemplatePath = PsotpTemplatePath
+	Case "otg"
+		sTemplatePath = PsotgTemplatePath
+	End Select
+	
+ 	sTemplate = sTemplatePath & sTemplateName
+	
+	' check if used for all documents, then the PsDocType = "odf" and has to be changed
+	If Dir(sTemplate) = "" Then
+		' maybe it's not a writer doc, but a spreadsheet
+		sTemplate = Left(sTemplate, len(sTemplate)-3) & "ots"
+		If Dir(sTemplate) = "" Then
+			' maybe it's a presentation
+			sTemplate = Left(sTemplate, len(sTemplate)-3) & "otp"
+			If Dir(sTemplate) = "" Then
+				' maybe it's a Draw Document
+				sTemplate = Left(sTemplate, len(sTemplate)-3) & "otg"
+				If Dir(sTemplate) = "" Then
+					FileNotFoundMessage( GetUIText("Sta_06") & Left(sTemplateName, len(sTemplateName)-4))
+					MakeNewDoc = -1
+					Exit Function
+				Else
+					' change var for use in filePicker
+					PsDocType = "otg"
+				End If
+			Else
+				PsDocType = "otp"
+			End If
+		Else
+			PsDocType = "ots"
+		End If
+	End If
+
+	Url = ConvertToUrl(sTemplate)
+	args(0).name="MacroExecutionMode"
+	args(0).value=com.sun.star.document.MacroExecMode.ALWAYS_EXECUTE_NO_WARN
+	oNewDoc = StarDesktop.loadComponentFromURL(Url, "_blank", 0, args())
+	
+	MakeNewDoc = 1
+	
+Exit Function
+ErrorHandler:
+	MakeNewDoc = -1
+	MyErrMessenger("MakeNewDoc")
+End Function 
+'----------------------------------------------------
+

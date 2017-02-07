@@ -1,0 +1,317 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<oor:component-data 
+ xmlns:oor="http://openoffice.org/2001/registry"
+ xmlns:xs="http://www.w3.org/2001/XMLSchema"
+ oor:name="Addons"
+ oor:package="org.openoffice.Office">
+	<node oor:name="AddonUI">
+		<node oor:name="OfficeToolBar">
+			<node oor:name="NeoHs.OfficeToolBar" oor:op="replace">
+				<node oor:name="m1" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>vnd.sun.star.script:NeoHs.Starters.StrtDocKeuzeVenster?language=Basic&amp;location=application</value>
+					</prop>
+					<prop oor:name="ImageIdentifier" oor:type="xs:string">
+						<value>%origin%/icons/image1</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Nieuw document</value>
+						<value xml:lang="en-US">New document</value>
+						<value xml:lang="nl-NL">Nieuw document</value>
+					</prop>
+					<prop oor:name="Target" oor:type="xs:string">
+						<value>_self</value>
+					</prop>
+				</node>
+				<node oor:name="m2" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>vnd.sun.star.script:NeoHs.Starters.StartEditingDoc?language=Basic&amp;location=application</value>
+					</prop>
+					<prop oor:name="ImageIdentifier" oor:type="xs:string">
+						<value>%origin%/icons/image2</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Document bewerken</value>
+						<value xml:lang="en-US">Edit document</value>
+						<value xml:lang="nl-NL">Document bewerken</value>
+					</prop>
+					<prop oor:name="Target" oor:type="xs:string">
+						<value>_self</value>
+					</prop>
+				</node>
+				<node oor:name="m3" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>vnd.sun.star.script:NeoHs.Starters.StartPlacing?language=Basic&amp;location=application</value>
+					</prop>
+					<prop oor:name="ImageIdentifier" oor:type="xs:string">
+						<value>%origin%/icons/image3</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Plaats</value>
+						<value xml:lang="en-US">Place</value>
+						<value xml:lang="nl-NL">Plaats</value>
+					</prop>
+					<prop oor:name="Target" oor:type="xs:string">
+						<value>_self</value>
+					</prop>
+				</node>
+				<node oor:name="m4" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>vnd.sun.star.script:NeoHs.Starters.StartMailing?language=Basic&amp;location=application</value>
+					</prop>
+					<prop oor:name="ImageIdentifier" oor:type="xs:string">
+						<value>%origin%/icons/image4</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Mailen</value>
+						<value xml:lang="en-US">Mail</value>
+						<value xml:lang="nl-NL">Mailen</value>
+					</prop>
+					<prop oor:name="Target" oor:type="xs:string">
+						<value>_self</value>
+					</prop>
+				</node>
+				<node oor:name="m5" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>vnd.sun.star.script:NeoHs.Starters.StartPrinting?language=Basic&amp;location=application</value>
+					</prop>
+					<prop oor:name="ImageIdentifier" oor:type="xs:string">
+						<value>%origin%/icons/image5</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Afdrukken</value>
+						<value xml:lang="en-US">Print</value>
+						<value xml:lang="nl-NL">Afdrukken</value>
+					</prop>
+					<prop oor:name="Target" oor:type="xs:string">
+						<value>_self</value>
+					</prop>
+				</node>
+			</node>
+		</node>
+
+		<node oor:name="OfficeMenuBar">
+			<node oor:name="NeoHs.OfficeMenuBar" oor:op="replace">
+				<prop oor:name="Context" oor:type="xs:string">
+					<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+				</prop>
+				<prop oor:name="Title" oor:type="xs:string">
+					<value>~LibreLex</value>
+				</prop>
+				<node oor:name="Submenu">
+				<node oor:name="m1" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>vnd.sun.star.script:NeoHs.Starters.StrtDocKeuzeVenster?language=Basic&amp;location=application</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Nieuw document</value>
+						<value xml:lang="en-US">New document</value>
+						<value xml:lang="nl-NL">Nieuw document</value>
+					</prop>
+					<prop oor:name="Target" oor:type="xs:string">
+						<value>_self</value>
+					</prop>
+				</node>
+				<node oor:name="m2" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>vnd.sun.star.script:NeoHs.Starters.StartEditingDoc?language=Basic&amp;location=application</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Document bewerken</value>
+						<value xml:lang="en-US">Edit document</value>
+						<value xml:lang="nl-NL">Document bewerken</value>
+					</prop>
+					<prop oor:name="Target" oor:type="xs:string">
+						<value>_self</value>
+					</prop>
+				</node>
+				<node oor:name="m3" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>private:separator</value>
+					</prop>
+				</node>
+				<node oor:name="m4" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Plaats</value>
+						<value xml:lang="en-US">Place</value>
+						<value xml:lang="nl-NL">Plaats</value>
+					</prop>
+					<node oor:name="Submenu">
+					<node oor:name="m1" oor:op="replace">
+						<prop oor:name="Context" oor:type="xs:string">
+							<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+						</prop>
+						<prop oor:name="URL" oor:type="xs:string">
+							<value>vnd.sun.star.script:NeoHs.Starters.StartOpslaanAlsPDF?language=Basic&amp;location=application</value>
+						</prop>
+						<prop oor:name="Title" oor:type="xs:string">
+							<value>Opslaan als PDF</value>
+							<value xml:lang="en-US">Save as PDF</value>
+							<value xml:lang="nl-NL">Opslaan als PDF</value>
+						</prop>
+						<prop oor:name="Target" oor:type="xs:string">
+							<value>_self</value>
+						</prop>
+					</node>
+					</node>
+				</node>
+				<node oor:name="m5" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>E-mailen</value>
+						<value xml:lang="en-US">E-Mail</value>
+						<value xml:lang="nl-NL">E-mailen</value>
+					</prop>
+					<node oor:name="Submenu">
+					<node oor:name="m1" oor:op="replace">
+						<prop oor:name="Context" oor:type="xs:string">
+							<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+						</prop>
+						<prop oor:name="URL" oor:type="xs:string">
+							<value>vnd.sun.star.script:NeoHs.Starters.StartMailenAlsPDF?language=Basic&amp;location=application</value>
+						</prop>
+						<prop oor:name="Title" oor:type="xs:string">
+							<value>Als PDF</value>
+							<value xml:lang="en-US">As PDF</value>
+							<value xml:lang="nl-NL">Als PDF</value>
+						</prop>
+						<prop oor:name="Target" oor:type="xs:string">
+							<value>_self</value>
+						</prop>
+					</node>
+					<node oor:name="m2" oor:op="replace">
+						<prop oor:name="Context" oor:type="xs:string">
+							<value>com.sun.star.text.TextDocument</value>
+						</prop>
+						<prop oor:name="URL" oor:type="xs:string">
+							<value>vnd.sun.star.script:NeoHs.Starters.StartMailingAsMSFormat?language=Basic&amp;location=application</value>
+						</prop>
+						<prop oor:name="Title" oor:type="xs:string">
+							<value>Als Word (.doc)</value>
+							<value xml:lang="en-US">As Word (.doc)</value>
+							<value xml:lang="nl-NL">Als Word (.doc)</value>
+						</prop>
+						<prop oor:name="Target" oor:type="xs:string">
+							<value>_self</value>
+						</prop>
+					</node>
+					<node oor:name="m3" oor:op="replace">
+						<prop oor:name="Context" oor:type="xs:string">
+							<value>com.sun.star.sheet.SpreadsheetDocument</value>
+						</prop>
+						<prop oor:name="URL" oor:type="xs:string">
+							<value>vnd.sun.star.script:NeoHs.Starters.StartMailingAsMSFormat?language=Basic&amp;location=application</value>
+						</prop>
+						<prop oor:name="Title" oor:type="xs:string">
+							<value>Als Excel (.xls)</value>
+							<value xml:lang="en-US">As Excel (.xls)</value>
+							<value xml:lang="nl-NL">Als Excel (.xls)</value>
+						</prop>
+						<prop oor:name="Target" oor:type="xs:string">
+							<value>_self</value>
+						</prop>
+					</node>
+					</node>
+				</node>
+				<node oor:name="m6" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Afdrukken</value>
+						<value xml:lang="en-US">Print</value>
+						<value xml:lang="nl-NL">Afdrukken</value>
+					</prop>
+					<node oor:name="Submenu">
+					<node oor:name="m1" oor:op="replace">
+						<prop oor:name="Context" oor:type="xs:string">
+							<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.presentation.PresentationDocument</value>
+						</prop>
+						<prop oor:name="URL" oor:type="xs:string">
+							<value>vnd.sun.star.script:NeoHs.Starters.StartPrintenNet?language=Basic&amp;location=application</value>
+						</prop>
+						<prop oor:name="Title" oor:type="xs:string">
+							<value>Op logo-papier</value>
+							<value xml:lang="en-US">On stationary</value>
+							<value xml:lang="nl-NL">Op logo-papier</value>
+						</prop>
+						<prop oor:name="Target" oor:type="xs:string">
+							<value>_self</value>
+						</prop>
+					</node>
+					<node oor:name="m2" oor:op="replace">
+						<prop oor:name="Context" oor:type="xs:string">
+							<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.presentation.PresentationDocument</value>
+						</prop>
+						<prop oor:name="URL" oor:type="xs:string">
+							<value>vnd.sun.star.script:NeoHs.Starters.StartPrintenBlanco?language=Basic&amp;location=application</value>
+						</prop>
+						<prop oor:name="Title" oor:type="xs:string">
+							<value>Op blanco papier</value>
+							<value xml:lang="en-US">On blanc paper</value>
+							<value xml:lang="nl-NL">Op blanco papier</value>
+						</prop>
+						<prop oor:name="Target" oor:type="xs:string">
+							<value>_self</value>
+						</prop>
+					</node>
+					</node>
+				</node>
+				<node oor:name="m7" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>private:separator</value>
+					</prop>
+				</node>
+				<node oor:name="m8" oor:op="replace">
+					<prop oor:name="Context" oor:type="xs:string">
+						<value>com.sun.star.text.TextDocument,com.sun.star.sheet.SpreadsheetDocument,com.sun.star.drawing.DrawingDocument,com.sun.star.presentation.PresentationDocument</value>
+					</prop>
+					<prop oor:name="URL" oor:type="xs:string">
+						<value>vnd.sun.star.script:NeoHs.Starters.ShowHS_Versie?language=Basic&amp;location=application</value>
+					</prop>
+					<prop oor:name="Title" oor:type="xs:string">
+						<value>Informatie</value>
+						<value xml:lang="en-US">Info</value>
+						<value xml:lang="nl-NL">Informatie</value>
+					</prop>
+					<prop oor:name="Target" oor:type="xs:string">
+						<value>_self</value>
+					</prop>
+				</node>
+				</node>
+			</node>
+		</node>
+	</node>
+</oor:component-data>

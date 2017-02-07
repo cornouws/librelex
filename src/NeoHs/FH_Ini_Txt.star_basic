@@ -1,0 +1,760 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Sub Main
+StrtDocKeuzeVenster()
+'StartEditingDoc
+
+End Sub
+
+'====================================================
+' Name        :  LoadDocIniDataInVars
+' Description :  Reads data from ini-file and Loads all DocSoorten and DocSoortenNames in global arrays
+' Arguments   :  -
+' Returns     :  1 if OK; -1 or -2 with Failure
+'----------------------------------------------------
+Function LoadDocIniDataInVars (byRef bUseFAV as Boolean, byRef bUseALL as Boolean, byRef bUseODS as Boolean, byRef bUseODP as Boolean, byRef bUseODG as Boolean) as Integer
+	Dim sFile$, s$, sSection$
+	Dim n%
+	Dim i%, u%
+	Dim bReading as Boolean
+	Dim bReadingNames as Boolean
+	Dim bDocumentsDoExist as Boolean
+	Dim bDoAllDocs as Boolean, bDoAllDocNames as Boolean, bDoAllDocReuseData as Boolean, bDoAllDocLabels as Boolean, bDoAllDocOptions as Boolean
+	Dim bDoODSDocs as Boolean, bDoODSDocNames as Boolean, bDoODSDocReuseData as Boolean, bDoODSDocLabels as Boolean, bDoODSDocOptions as Boolean
+	Dim bDoODPDocs as Boolean, bDoODPDocNames as Boolean, bDoODPDocReuseData as Boolean, bDoODPDocLabels as Boolean, bDoODPDocOptions as Boolean
+	Dim bDoODGDocs as Boolean, bDoODGDocNames as Boolean, bDoODGDocReuseData as Boolean, bDoODGDocLabels as Boolean, bDoODGDocOptions as Boolean
+
+'msgbox "Start LoadDocIniDataInVars  "	
+	On Error GoTo ErrorHandler
+	
+	sFile = PsIniPath & SDOCININAME
+
+	If Dir(sFile) = "" Then
+		' Fout in installatie, geen ini
+		FileNotFoundMessage(SDOCININAME, PsIniPath)
+		LoadDocIniDataInVars = -1
+		Exit Function
+	End If
+	
+	n = FreeFile()
+	Open sFile for Input As #n
+
+	Do while NOT EOF(n)
+		Line Input #n, s
+		
+		If Left (s, 1) <> "'" Then
+		
+			If Left (s, 1) = "[" Then
+				'reset for new category
+				bDoAllDocs = FALSE : bDoAllDocNames = FALSE : bDoAllDocReuseData = FALSE : bDoAllDocLabels = FALSE : bDoAllDocOptions = FALSE
+				bDoODSDocs = FALSE : bDoODSDocNames = FALSE : bDoODSDocReuseData = FALSE : bDoODSDocLabels = FALSE : bDoODSDocOptions = FALSE
+				bDoODPDocs = FALSE : bDoODPDocNames = FALSE : bDoODPDocReuseData = FALSE : bDoODPDocLabels = FALSE : bDoODPDocOptions = FALSE
+				bDoODGDocs = FALSE : bDoODGDocNames = FALSE : bDoODGDocReuseData = FALSE : bDoODGDocLabels = FALSE : bDoODGDocOptions = FALSE
+				
+				sSection = left (s, Instr(s, "]"))
+				Select Case sSection
+					Case SALLDOCS 
+						bDoAllDocs = TRUE
+						i = 0
+					Case SALLDOCNAMES 
+						bDoAllDocNames = TRUE
+						i = 0
+					Case SALLDOCREUSEDATA
+						bDoAllDocReuseData = TRUE
+						i = 0
+					Case SALLDOCLABELS
+						bDoAllDocLabels = TRUE
+						i = 0
+					Case SALLDOCOPTIONS 
+						bDoAllDocOptions = TRUE
+						i = 0
+					Case SODSDOCS 
+						bDoODSDocs = TRUE
+						i = 0
+					Case SODSDOCNAMES
+						bDoODSDocNames = TRUE
+						i = 0
+					Case SODSDOCREUSEDATA
+						bDoODSDocReuseData = TRUE
+						i = 0
+					Case SODSDOCLABELS
+						bDoODSDocLabels = TRUE
+						i = 0
+					Case SODSDOCOPTIONS 
+						bDoODSDocOptions = TRUE
+						i = 0
+					Case SODPDOCS 
+						bDoODPDocs = TRUE
+						i = 0
+					Case SODPDOCNAMES
+						bDoODPDocNames = TRUE
+						i = 0
+					Case SODPDOCREUSEDATA
+						bDoODPDocReuseData = TRUE
+						i = 0
+					Case SODPDOCLABELS
+						bDoODPDocLabels = TRUE
+						i = 0
+					Case SODPDOCOPTIONS 
+						bDoODPDocOptions = TRUE
+						i = 0
+					Case SODGDOCSS
+						bDoODGDocs = TRUE
+						i = 0
+					Case SODGDOCNAMES
+						bDoODGDocNames = TRUE
+						i = 0
+					Case SODGDOCREUSEDATA
+						bDoODGDocReuseData = TRUE
+						i = 0
+					Case SODGDOCLABELS
+						bDoODGDocLabels = TRUE
+						i = 0
+					Case SODGDOCOPTIONS 
+						bDoODGDocOptions = TRUE
+						i = 0
+				End Select
+			End If
+	
+			If bDoAllDocs Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsALLDocsData(i)
+					PsALLDocsData(i) = s
+					Redim Preserve PsALLDocs(i)
+					PsALLDocs(i) = Left(s, Instr(s, ";")-1)
+					s = Right(s, Len(s) - Instr(s, ";"))
+					Redim Preserve PsALLDisplayNames(i)
+					PsALLDisplayNames(i) = Left(s, Instr(s, ";")-1)
+					If PsALLDisplayNames(i) = "" Then PsALLDisplayNames(i) = PsALLDocs(i)
+					i = i + 1
+				End If
+			ElseIf bDoAllDocNames Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsAllDocNames(i)
+					PsALLDocNames(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoAllDocReuseData Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsAllDocReuseData(i)
+					PsALLDocReuseData(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoAllDocLabels Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsAllDocLabels(i)
+					PsAllDocLabels(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoAllDocOptions Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsAllDocOptions(i)
+					PsALLDocOptions(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODSDocs Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODSDocsData(i)
+					PsODSDocsData(i) = s
+					Redim Preserve PsODSDocs(i)
+					PsODSDocs(i) = Left(s, Instr(s, ";")-1)
+					s = Right(s, Len(s) - Instr(s, ";"))
+					Redim Preserve PsODSDisplayNames(i)
+					PsODSDisplayNames(i) = Left(s, Instr(s, ";")-1)
+					If PsODSDisplayNames(i) = "" Then PsODSDisplayNames(i) = PsODSDocs(i)
+					i = i + 1
+				End If
+			ElseIf bDoODSDocNames Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODSDocNames(i)
+					PsODSDocNames(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODSDocReuseData Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODSDocReuseData(i)
+					PsODSDocReuseData(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODSDocLabels Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODSDocLabels(i)
+					PsODSDocLabels(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODSDocOptions Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODSDocOptions(i)
+					PsODSDocOptions(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODPDocs Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODPDocsData(i)
+					PsODPDocsData(i) = s
+					Redim Preserve PsODPDocs(i)
+					PsODPDocs(i) = Left(s, Instr(s, ";")-1)
+					s = Right(s, Len(s) - Instr(s, ";"))
+					Redim Preserve PsODPDisplayNames(i)
+					PsODPDisplayNames(i) = Left(s, Instr(s, ";")-1)
+					If PsODPDisplayNames(i) = "" Then PsODPDisplayNames(i) = PsODPDocs(i)
+					i = i + 1
+				End If
+			ElseIf bDoODPDocNames Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODPDocNames(i)
+					PsODPDocNames(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODPDocReuseData Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODPDocReuseData(i)
+					PsODPDocReuseData(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODPDocLabels Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODPDocLabels(i)
+					PsODPDocLabels(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODPDocOptions Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODPDocOptions(i)
+					PsODPDocOptions(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODGDocs Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODGDocsData(i)
+					PsODGDocsData(i) = s
+					Redim Preserve PsODGDocs(i)
+					PsODGDocs(i) = Left(s, Instr(s, ";")-1)
+					s = Right(s, Len(s) - Instr(s, ";"))
+					Redim Preserve PsODGDisplayNames(i)
+					PsODGDisplayNames(i) = Left(s, Instr(s, ";")-1)
+					If PsODGDisplayNames(i) = "" Then PsODGDisplayNames(i) = PsODGDocs(i)
+					i = i + 1
+				End If
+			ElseIf bDoODGDocNames Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODGDocNames(i)
+					PsODGDocNames(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODGDocReuseData Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODGDocReuseData(i)
+					PsODGDocReuseData(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODGDocLabels Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODGDocLabels(i)
+					PsODGDocLabels(i) = s
+					i = i + 1
+				End If
+			ElseIf bDoODGDocOptions Then
+				If left(s, 1) <> "[" Then
+					Redim Preserve PsODGDocOptions(i)
+					PsODGDocOptions(i) = s
+					i = i + 1
+				End If
+			Else
+			End If
+
+			If bDoAllDocs Then
+			ElseIf bDoODSDocs Then
+			ElseIf bDoODPDocs Then
+			ElseIf bDoODGDocs Then
+			Else
+			End If
+
+
+		End If
+	Loop
+
+	' 
+'	If Ubound(PsFAVDocsData()) > -1 Then bUseFAV = TRUE
+'	If Ubound(PsALLDocsData()) > -1 Then bUseALL = TRUE
+'	If Ubound(PsODSDocsData()) > -1 Then bUseODS = TRUE
+'	If Ubound(PsODPDocsData()) > -1 Then bUseODP = TRUE
+'	If Ubound(PsODGDocsData()) > -1 Then bUseODG = TRUE
+
+	' set the booleans, used to hide icons, depending on available data in the ini files
+	If Ubound(PsFAVDocsData()) > -1 Then bUseFAV = TRUE
+	If Ubound(PsALLDocsData()) > -1 Then bUseALL = TRUE
+	If Ubound(PsODSDocsData()) > -1 Then bUseODS = TRUE
+	If Ubound(PsODPDocsData()) > -1 Then bUseODP = TRUE
+	If Ubound(PsODGDocsData()) > -1 Then bUseODG = TRUE
+
+	 ' OPTIE PILOT, maxumum number of documents NLIMITEDNUMBERDOCS +1
+	If NLIMITEDNUMBERDOCS > 0 Then
+		u = NLIMITEDNUMBERDOCS -1
+		If UBound(PsFAVDocs()) > u Then 
+			Redim Preserve PsFAVDocs(u)
+		End If
+		If UBound(PsALLDocs()) > u Then
+			Redim Preserve PsALLDocs(u)
+		End If
+		If UBound(PsODSDocs()) > u Then
+			Redim Preserve PsODSDocs(u)
+		End If
+		If UBound(PsODPDocs()) > u Then
+			Redim Preserve PsODPDocs(u)
+		End If
+		If UBound(PsODGDocs()) > u Then
+			Redim Preserve PsODGDocs(u)
+		End If
+	Else
+	End If
+	
+	Close #n
+
+	If CheckDocIniDataVarsSize = -1 then
+		LoadDocIniDataInVars = -2
+		Exit Function
+	End If
+	
+	LoadDocIniDataInVars = 1
+
+Exit Function
+ErrorHandler:
+	LoadDocIniDataInVars = -1
+	MyErrMessenger("LoadDocIniDataInVars")
+End Function
+
+'====================================================
+' Name        :  CheckDocIniDataVarsSize
+' Description :  Checks if ini returned the same number of lines for all groups of each categorie
+' Arguments   :  -
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function CheckDocIniDataVarsSize as Integer
+	
+On Error GoTo ErrorHandler
+
+	If uBound(PsALLDocsData()) + uBound(PsALLDocNames()) - uBound(PsALLDocLabels()) - uBound(PsALLDocOptions()) <> 0 Then
+		VariousErrorMessage(GetUIText("Dia_06") & " ALL " & GetUIText("Dia_06a"), 16)
+		CheckDocIniDataVarsSize = -1
+		Exit Function
+	End If
+	If uBound(PsODSDocsData()) + uBound(PsODSDocNames()) - uBound(PsODSDocLabels()) - uBound(PsODSDocOptions()) <> 0 Then
+		VariousErrorMessage(GetUIText("Dia_06") & " ODS " & GetUIText("Dia_06a"), 16)
+		CheckDocIniDataVarsSize = -1
+		Exit Function
+	End If
+	If uBound(PsODPDocsData()) + uBound(PsODPDocNames()) - uBound(PsODPDocLabels()) - uBound(PsODPDocOptions()) <> 0 Then
+		VariousErrorMessage(GetUIText("Dia_06") & " ODP " & GetUIText("Dia_06a"), 16)
+		CheckDocIniDataVarsSize = -1
+		Exit Function
+	End If
+	If uBound(PsODGDocsData()) + uBound(PsODGDocNames()) - uBound(PsODGDocLabels()) - uBound(PsODGDocOptions()) <> 0 Then
+		VariousErrorMessage(GetUIText("Dia_06") & " ODG " & GetUIText("Dia_06a"), 16)
+		CheckDocIniDataVarsSize = -1
+		Exit Function
+	End If
+
+
+
+	CheckDocIniDataVarsSize = 1
+	
+Exit Function
+ErrorHandler:
+	CheckDocIniDataVarsSize = -1
+	MyErrMessenger("CheckDocIniDataVarsSize")
+End Function
+'====================================================
+' Name        :  FillDocUserData
+' Description :  Loads mdw data as saved from previous action in txt file in dialog
+' Arguments   :  uses SNAMEUSERDATAFILE
+' Returns     :  -
+'----------------------------------------------------
+Sub FillDocUserData()
+	Dim sFile$
+	Dim sArray() as String
+	Dim sTmp() as String
+	Dim i%
+	Dim oCtrl
+
+On Error GoTo ErrorHandler
+		
+	sFile = ConvertToURL(PsUserPath & SNAMEUSERDATAFILE)
+	If Dir (sFile) = "" then
+		Exit sub
+	End If
+
+	sArray() = FillArrayFromOneSectionInFile(sFile, "[UserDataFields]")
+
+	For i = 0 to UBound(sArray())
+		sTmp() = Split(sArray(i), "=")
+		oCtrl = PoDocDlg.getControl("txt" & sTmp(0))
+		If Not IsNull(oCtrl) Then oCtrl.Text = sTmp(1)
+	Next
+
+Exit Sub
+ErrorHandler:	
+	MyErrMessenger("FillDocUserData")
+End Sub
+'====================================================
+' ©  Nou&Off     |    2015-08-19    |    ©  www.nouenoff.nl
+' Name        :  WriteDocUserData
+' Description :  Saves mdw data as filled in dialog to txt-file for reuse
+' Arguments   :  uses SNAMEUSERDATAFILE
+' Returns     :  -
+'----------------------------------------------------
+Sub WriteDocUserData()
+	Dim sFile$, s$
+	Dim sArray() as String
+	Dim sArray2() as String
+	Dim sTmp() as String
+	Dim iArr%, i%, n%
+	Dim oCtrl
+
+On Error GoTo ErrorHandler
+		
+	sFile = ConvertToURL(PsUserPath & SNAMEUSERDATAFILE)
+
+	If Dir (sFile) = "" Then
+		' first use, load user fields from global var		
+		sArray() = Split(PsReuseUserData,",")
+		iArr2 = uBound(sArray())
+		For i = 0 to uBound(sArray())
+			sArray(i) = sArray(i) & "=-" ' add separator and empty value
+		Next
+	Else
+		sArray2() = Split(PsReuseUserData,",")
+		iArr2 = uBound(sArray2())
+		sArray() = FillArrayFromOneSectionInFile(sFile, "[UserDataFields]")
+		iArr = uBound(sArray())
+		' make sure that the upper bound of the array is fine
+		' so that an outdate file does not break this
+		If iArr2 > iArr Then
+			Redim Preserve sArray(iArr2)
+			For i = iArr+1 to uBound(sArray())
+				sArray(i) = sArray2(i) & "=-" ' add separator and empty value
+			Next
+		End If
+	End If
+	
+	n = FreeFile()
+	Open sFile for Output As #n
+	
+	Print #n, "' userData written from dialog and for reuse; " & SMSGTITEL & ", " & SHS_VERSIE
+	Print #n, "[UserDataFields]"
+	For i = 0 to UBound(sArray())
+		sTmp() = Split(sArray(i), "=")
+		oCtrl = PoDocDlg.getControl("txt" & sTmp(0))
+		If Not IsNull(oCtrl) Then sTmp(1) = oCtrl.Text 
+		Print #n, sTmp(0) & "=" & sTmp(1)
+	Next
+	Close #n
+
+Exit Sub
+ErrorHandler:	
+	MyErrMessenger("WriteDocUserData")
+End Sub
+'====================================================
+' Name        :  FillArrayFromOneSectionInFile
+' Description :  Reeds lines from one section ini data into array
+' Arguments   :  Name of the ini file and section
+' Returns     :  Array()
+'----------------------------------------------------
+Function FillArrayFromOneSectionInFile(sFile$, sSection$)
+	Dim n%, i%
+	Dim s$
+	Dim sArray() as String
+	Dim bReading as Boolean
+
+On Error goto ErrorHandler
+
+	i = -1 ' fist time it passes will be bracket, second time is first line to read, index must be 0	
+	n = FreeFile()
+
+	If Dir(sFile) = "" Then	' not found
+		Exit Function
+	End If
+	
+	Open sFile for Input As #n
+	Do while NOT EOF(n)
+		Line Input #n, s
+		If Left (s, 1) <> "'" AND Len(Trim(s)) > 0 Then
+			If Left (s, len(sSection)) = sSection OR bReading Then
+				bReading  = TRUE
+				If Left (s, 1) = "[" AND i > -1 Then ' do not check the first line
+					' we're done with first section
+					bReading = FALSE
+					Exit Do
+				End If
+	
+				If i > -1 Then
+					Redim Preserve sArray(i)
+					sArray(i) = s
+				End If
+				i = i + 1
+			End If
+		End If
+	Loop
+	Close #n
+	
+	FillArrayFromOneSectionInFile = sArray()
+	
+	Exit Function
+ErrorHandler:
+	MyErrMessenger ("FillArrayFromOneSectionInFile")
+End Function
+'====================================================
+' Name        :  FillArrayFromSectionNInFile
+' Description :  Reeds lines from _specific_ section ini data into array
+' Arguments   :  Name of the ini file and number of wanted section
+' Returns     :  Array()
+'----------------------------------------------------
+Function FillArrayFromSectionNInFile(sFile$, nSectWanted%)
+	Dim n%, i%, nSectCnt%
+	Dim s$
+	Dim sArray() as String
+	Dim bReading as Boolean
+	Dim bSectFnd as Boolean
+
+On Error goto ErrorHandler
+
+	i = -1 ' fist time it passes will be bracket, second time is first line to read, index must be 0	
+	n = FreeFile()
+
+	If Dir(sFile) = "" Then	' not found
+		Exit Function
+	End If
+	
+	Open sFile for Input As #n
+	Do while NOT EOF(n)
+		Line Input #n, s
+		If Left (s, 1) <> "'" AND Len(Trim(s)) > 0 Then
+			If Left (s, 1) = "[" AND bReading = False Then
+				nSectCnt = nSectCnt +1
+				If nSectCnt = nSectWanted Then bSectFnd = True
+			End If
+			If bSectFnd Then
+				If Left (s, 1) = "[" OR bReading Then
+					bReading  = TRUE
+					If Left (s, 1) = "[" AND i > -1 Then ' do not check the first line
+						' we're done with first section
+						bReading = FALSE
+						Exit Do
+					End If
+		
+					If i > -1 Then
+						Redim Preserve sArray(i)
+						sArray(i) = s
+					End If
+					i = i + 1
+				End If
+			End If
+		End If
+	Loop
+	Close #n
+	
+	FillArrayFromSectionNInFile = sArray()
+	
+	Exit Function
+ErrorHandler:
+	MyErrMessenger ("FillArrayFromSectionNInFile")
+End Function
+'----------------------------------------------------
+
+sub testWATSIF
+dim s$, sSec$
+dim sA() as string
+	s = convertToURL("/home/cono/test3.txt")
+	sSec="[TestSectie2]"
+'	sA() = array("11111", "2 tweede", "3 derde regel","vierde") '"nieuw tweede", 
+	sA() = array("11111", "2 tweede", "3 derde regel","vierde", "55555", "66666") '"nieuw tweede", 
+'	sA() = array("LB", "nieuw tweede", "(voormalig) tweede regel","4e regel","laatste=regel") '"nieuw tweede", 
+'	sA() = array("LB","Tweede")
+	WriteArrayToSectionInFile(s, sSec, sA)
+end sub
+'====================================================
+' Description :  Replacement for WRITING with MsWin System.PrivateProfileString
+' Arguments   :  Strings for File, Section, and array
+' Returns     :  1 if OK; -1 on failure
+'----------------------------------------------------
+Function WriteArrayToSectionInFile(sFile$, sSec$, sArray())
+	Dim n1%, n2%
+	Dim i%
+	Dim s$, sFileBak$
+	Dim bRightSection as Boolean
+	Dim bNotFirstLine as Boolean
+		
+On Error GoTo ErrorHandler
+
+	If Dir(sFile) = "" Then	' not found
+		WriteArrayFromSectionInFile = -1
+		Exit Function
+	End If
+	sFileBak = sFile & "Bak"
+	FileCopy (sFile, sFileBak)	
+	n1 = FreeFile()
+	Open sFile for Input As #n1
+	n2 = FreeFile()
+	Open sFileBak for Output As #n2
+	
+	Do while NOT EOF(n1)
+		Input #n1, s
+		If NOT bRightSection Then
+			If Left (Trim(s), len(sSec)) = sSec Then bRightSection = True
+		Else
+			' print nothing (condition NOT bRightSection) untill next section
+			If Left (s, 1) = "[" Then ' new section, first print input lines
+				bRightSection = False
+				For i = 0 to uBound(sArray())
+					print #n2, sArray(i)
+				Next
+			End If
+		End If
+		' write the line
+		If Left (s, 1) = "[" Then
+			If bNotFirstLine Then ' print extra blank line first, those are not read from the orig. file
+				print #n2, Chr(13)
+			Else
+				bNotFirstLine = True ' no blanc line on top of file
+			End If
+			print #n2, s
+		Else
+			If Not bRightSection Then print #n2, s
+		End If
+	Loop
+
+	Close #n1
+	Close #n2
+	
+	FileCopy (sFileBak, sFile)
+	Kill (sFileBak)  '  you might want to kill the bak-file
+	
+	WriteArrayToSectionInFile = 1 '	All OK
+	
+	Exit Function
+ErrorHandler:	
+	WriteArrayToSectionInFile = -1
+	MyErrMessenger ("WriteArrayToSectionInFile")
+End Function
+'====================================================
+' Name        :  FillArrayFromOneLineIni
+' Description :  Reeds one line ini data into array
+' Arguments   :  Name of the ini file
+' Returns     :  Array (variant?)
+'----------------------------------------------------
+Function FillArrayFromOneLineIni(sFile$)
+	Dim sArray() as String
+	Dim s$
+	Dim n%
+
+On Error GoTo ErrorHandler
+	
+	If Dir(sFile) = "" Then
+		' possible err.message depends on info, so do this by calling funtion
+		Exit Function
+	End If
+	
+	n = FreeFile()
+	Open sFile for Input As #n
+	Do while NOT EOF(n)
+		Line Input #n, s
+		If Left (s, 1) <> "'" Then
+			sArray() = Split(s,";")
+		End If
+	Loop
+	Close #n
+
+	FillArrayFromOneLineIni = sArray()
+	
+	Exit Function
+ErrorHandler:	
+	MyErrMessenger ("FillArrayFromOneLineIni")
+End Function
+'====================================================
+' Name        :  FillVarFromOneLineIni
+' Description :  Reeds one line ini data into var
+' Arguments   :  Path and file name
+' Returns     :  string
+'----------------------------------------------------
+Function FillVarFromOneLineIni(sFile$) as String
+	Dim n%
+	Dim s$
+	
+On Error GoTo ErrorHandler
+	
+	If Dir(sFile) = "" Then
+		' possible err.message depends on info, so do this by calling funtion
+		Exit Function
+	End If
+	
+	n = FreeFile()
+	Open sFile for Input As #n
+	Do while NOT EOF(n)
+		Line Input #n, s
+		If Left (s, 1) <> "'" Then
+			FillVarFromOneLineIni = Trim(s)
+		End If
+	Loop
+	Close #n
+	
+	Exit Function
+ErrorHandler:	
+	MyErrMessenger ("FillVarFromOneLineIni")
+End Function
+'====================================================
+' Name        :  WriteVarToOneLineIni
+' Description :  Writes a var to one line
+' Arguments   :  Path and file name
+' Returns     :  1 if OK, -1 with failure
+'----------------------------------------------------
+Function WriteVarToOneLineIni(sFile$, s$) as Integer
+	Dim n%
+
+On Error GoTo ErrorHandler
+	
+	n = FreeFile()
+	Open sFile for Output As #n
+	Print #n, s
+	Close #n
+	
+	WriteVarToOneLineIni = 1
+	
+	Exit Function
+ErrorHandler:	
+	WriteVarToOneLineIni = -1
+	MyErrMessenger ("WriteVarToOneLineIni")
+End Function
+'====================================================
+' Name        :  WriteDebugData
+' Description :  Writes debug info to a file
+' EXAMPLE
+' If BDEBUGMODE Then WriteDebugData(FALSE, " id " & "function name; " & "var name: " & value)
+'----------------------------------------------------
+Sub WriteDebugData(bWithTime as Boolean, sWrite as String)
+	Dim sFile$, s$
+	Dim n%
+
+On Error GoTo ErrorHandler
+	s = GetItemsInstallPath("$(home)")
+	sFile = ConvertToURL(PreserveEndSlash(s) & SNAMEDEBUGDATAFILE)
+
+	n = FreeFile()
+	Open sFile for Append As #n
+
+	If bWithTime Then
+		Print #n, now & CHR(9) & sWrite
+	Else
+		Print #n, sWrite
+	End If
+	Close #n
+
+Exit Sub
+ErrorHandler:	
+	MyErrMessenger("WriteDebugData")
+End Sub
+'----------------------------------------------------
+

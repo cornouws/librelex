@@ -1,0 +1,49 @@
+REM  *****  BASIC  *****
+' version 1.3.0.1 - date 2016-06-10
+' various code from fora, Andrew's Macro Document and such sources
+'
+Sub Main
+
+End Sub
+
+'-----------------
+Sub PlaceTextOnClipBoard(s$)
+  Dim null As Object
+  Dim sClipName As String 
+
+  sPlaceOnClipboard = s
+  sClipName = "com.sun.star.datatransfer.clipboard.SystemClipboard"
+  oClip = createUnoService(sClipName)
+  oTRX = createUnoListener("TR_", "com.sun.star.datatransfer.XTransferable")
+  oClipContents = oClip.setContents(oTRX, null)
+End Sub
+
+'-----------------
+Sub StopClipboardListening
+	removeUnoListener (oTRX)
+End Sub
+
+'-----------------
+Function TR_getTransferData( aFlavor As com.sun.star.datatransfer.DataFlavor ) As Any
+  If (aFlavor.MimeType = "text/plain;charset=utf-16") Then
+    TR_getTransferData = sPlaceOnClipboard
+  EndIf
+End Function
+
+'-----------------
+Function TR_getTransferDataFlavors() As Any
+  Dim aF As New com.sun.star.datatransfer.DataFlavor
+  aF.MimeType =    "text/plain;charset=utf-16"
+  aF.HumanPresentableName = "Unicode-Text"
+  TR_getTransferDataFlavors = Array(aF)
+End Function
+ 
+'-----------------
+Function TR_isDataFlavorSupported( aFlavor As com.sun.star.datatransfer.DataFlavor ) As Boolean
+  TR_isDataFlavorSupported = (aFlavor.MimeType = "text/plain;charset=utf-16")
+End Function 
+
+'-----------------
+Sub TR_disposing
+End Sub
+

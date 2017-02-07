@@ -1,0 +1,88 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Option Explicit
+
+Public PsOndtData(13,1) as String	' to read from tools|options and use for ondertekening
+
+Sub Main
+
+End Sub
+
+'====================================================
+' Name		  :  ReadOndtDataFromOptions 
+' Description :  Places ondt. data as present in Tools|Options in grobal var
+' Arguments   :  -
+' Returns     :  values in global var PsOndtData
+'----------------------------------------------------
+Sub ReadOndtDataFromOptions
+
+REM  0 | UserGroup		 		= UserGroup (??)
+REM  1 | apartment
+REM  2 | c						= Country
+REM  3 | facsimiletelephonenumber	= fax
+REM  4 | fathersname =
+REM  5 | givenname	= first name
+REM  6 | homephone	= tel. home
+REM  7 | initials	= initialen
+REM  8 | l			= town
+REM  9 | mail		= e-mail
+REM 10 | o			= organisation
+REM 11 | position	= functie
+REM 12 | postalcode = 
+REM 13 | sn			= familinaam
+REM 14 | st			= state
+REM 15 | street		= adres
+REM 16 | telephonenumber
+REM 17 | title		= titel
+
+	Dim oOndtDataAccess	
+	
+	Globalscope.BasicLibraries.LoadLibrary("Tools")
+
+	Init_sOndtDataString()
+
+	oOndtDataAccess = GetRegistryKeyContent("org.openoffice.UserProfile/Data", True)
+	PsOndtData(0,1) = oOndtDataAccess.GetByName("o")
+	PsOndtData(1,1) = oOndtDataAccess.GetByName("givenname")
+	PsOndtData(2,1) = oOndtDataAccess.GetByName("sn")
+	PsOndtData(3,1) = oOndtDataAccess.GetByName("position")
+	PsOndtData(4,1) = oOndtDataAccess.GetByName("street")
+	PsOndtData(5,1) = oOndtDataAccess.GetByName("postalcode")
+	PsOndtData(6,1) = oOndtDataAccess.GetByName("l")	' location
+	PsOndtData(7,1) = oOndtDataAccess.GetByName("c")
+	PsOndtData(8,1) = oOndtDataAccess.GetByName("telephonenumber")	' algemeen nummer
+	PsOndtData(9,1) = oOndtDataAccess.GetByName("homephone")		' doorkiesnummer!
+	PsOndtData(10,1) = oOndtDataAccess.GetByName("facsimiletelephonenumber")
+	PsOndtData(11,1) = oOndtDataAccess.GetByName("initials")
+	PsOndtData(12,1) = oOndtDataAccess.GetByName("title")
+	PsOndtData(13,1) = oOndtDataAccess.GetByName("mail")
+
+End Sub
+'====================================================
+' Name        :  Init_sOndtDataString
+' Description :  Initialisation of PsOndtData with names of fields/bookmarks etc
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub	Init_sOndtDataString 
+	PsOndtData(0,0) = "Organisation"
+	PsOndtData(1,0) = "Firstname"
+	PsOndtData(2,0) = "Familyname"
+	PsOndtData(3,0) = "Position"
+	PsOndtData(4,0) = "Street"
+	PsOndtData(5,0) = "Postalcode"
+	PsOndtData(6,0) = "Town"
+	PsOndtData(7,0) = "Country"
+	PsOndtData(8,0) = "Phone"
+	PsOndtData(9,0) = "PhoneDirect"
+	PsOndtData(10,0) = "Fax"
+	PsOndtData(11,0) = "Initials"
+	PsOndtData(12,0) = "Title"
+	PsOndtData(13,0) = "Mail"
+End Sub
+'----------------------------------------------------
+

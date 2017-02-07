@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="PlaceDlg" dlg:left="75" dlg:top="50" dlg:width="253" dlg:height="141" dlg:closeable="true" dlg:moveable="true">
+ <dlg:styles>
+  <dlg:style dlg:style-id="0" dlg:border="0xffd320"/>
+ </dlg:styles>
+ <dlg:bulletinboard>
+  <dlg:textfield dlg:id="txtLocal" dlg:tab-index="12" dlg:left="58" dlg:top="22" dlg:width="139" dlg:height="12"/>
+  <dlg:textfield dlg:id="txtCloud" dlg:tab-index="13" dlg:left="58" dlg:top="36" dlg:width="139" dlg:height="12"/>
+  <dlg:button dlg:id="cmdLocal" dlg:tab-index="4" dlg:left="197" dlg:top="22" dlg:width="8" dlg:height="12" dlg:value="...">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog_Any.cmdLocal_Click?language=Basic&amp;location=application" script:language="Script"/>
+   <script:event script:event-name="on-itemstatechange" script:macro-name="vnd.sun.star.script:NeoHs.Dialog_Any.cmdLocal_Click?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:button dlg:id="cmdCloud" dlg:tab-index="5" dlg:left="197" dlg:top="36" dlg:width="8" dlg:height="12" dlg:value="..."/>
+  <dlg:titledbox dlg:id="fraDoctype" dlg:tab-index="14" dlg:left="59" dlg:top="84" dlg:width="130" dlg:height="48" dlg:help-text="Méér keuzen mogelijk">
+   <dlg:title dlg:value="Place as type(s)"/>
+  </dlg:titledbox>
+  <dlg:checkbox dlg:id="chkPDF" dlg:tab-index="7" dlg:left="66" dlg:top="118" dlg:width="27" dlg:height="11" dlg:value="PDF" dlg:checked="true">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog_Any.chkPDF_Click?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:checkbox>
+  <dlg:checkbox dlg:id="chkODF" dlg:tab-index="8" dlg:left="96" dlg:top="118" dlg:width="29" dlg:height="11" dlg:value="ODF" dlg:checked="false">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog_Any.chkODF_Click?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:checkbox>
+  <dlg:checkbox dlg:id="chkMS" dlg:tab-index="9" dlg:left="129" dlg:top="118" dlg:width="54" dlg:height="11" dlg:value="MS doc" dlg:checked="false">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog_Any.chkMS_Click?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:checkbox>
+  <dlg:button dlg:id="cmdOK" dlg:tab-index="10" dlg:left="206" dlg:top="101" dlg:width="41" dlg:height="14" dlg:default="true" dlg:value="~OK" dlg:button-type="ok"/>
+  <dlg:button dlg:id="cmdCancel" dlg:tab-index="11" dlg:left="206" dlg:top="117" dlg:width="41" dlg:height="14" dlg:value="~Annuleer" dlg:button-type="cancel"/>
+  <dlg:img dlg:style-id="0" dlg:id="imgLogo" dlg:tab-index="15" dlg:left="219" dlg:top="9" dlg:width="26" dlg:height="29" dlg:src="file:///home/cono/Documenten/DATA/Nou&amp;Off/Projecten/EigenProjecten/NeoHs/Bouwen/plaatjes_icoontjes/place_64x64.bmp"/>
+  <dlg:radiogroup>
+   <dlg:radio dlg:id="optLocal" dlg:tab-index="0" dlg:left="10" dlg:top="22" dlg:width="42" dlg:height="12" dlg:value="Lokaal" dlg:checked="true">
+    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog_Any.optLocal_Select?language=Basic&amp;location=application" script:language="Script"/>
+   </dlg:radio>
+   <dlg:radio dlg:id="optCloud" dlg:tab-index="1" dlg:left="10" dlg:top="36" dlg:width="42" dlg:height="12" dlg:value="Cloud">
+    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog_Any.optCloud_Select?language=Basic&amp;location=application" script:language="Script"/>
+   </dlg:radio>
+   <dlg:radio dlg:id="optCRM" dlg:tab-index="2" dlg:left="10" dlg:top="50" dlg:width="42" dlg:height="12" dlg:value="CRM / DMS">
+    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog_Any.optCRM_Select?language=Basic&amp;location=application" script:language="Script"/>
+   </dlg:radio>
+   <dlg:radio dlg:id="optGD" dlg:tab-index="3" dlg:left="10" dlg:top="64" dlg:width="42" dlg:height="12" dlg:value="Google Docs">
+    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:NeoHs.Dialog_Any.optGD_Select?language=Basic&amp;location=application" script:language="Script"/>
+   </dlg:radio>
+  </dlg:radiogroup>
+  <dlg:button dlg:id="cmdGD" dlg:tab-index="6" dlg:disabled="true" dlg:left="58" dlg:top="63" dlg:width="49" dlg:height="12" dlg:value="Start export"/>
+  <dlg:menulist dlg:id="lstCRM" dlg:tab-index="16" dlg:left="58" dlg:top="50" dlg:width="147" dlg:height="12" dlg:spin="true">
+   <dlg:menupopup>
+    <dlg:menuitem dlg:value="vtiger"/>
+    <dlg:menuitem dlg:value="Alfresco"/>
+    <dlg:menuitem dlg:value="Covide"/>
+    <dlg:menuitem dlg:value="OpenIMS"/>
+    <dlg:menuitem dlg:value="...."/>
+   </dlg:menupopup>
+  </dlg:menulist>
+  <dlg:text dlg:id="lblPlaceAs" dlg:tab-index="17" dlg:left="66" dlg:top="95" dlg:width="105" dlg:height="18" dlg:value="- More than one type allowed&#x0a;- Current document type : &quot; &quot; "/>
+  <dlg:text dlg:id="Label1" dlg:tab-index="18" dlg:left="166" dlg:top="127" dlg:width="0" dlg:height="2" dlg:value="Label1"/>
+  <dlg:text dlg:id="lblCurrentType" dlg:tab-index="19" dlg:visible="false" dlg:left="214" dlg:top="50" dlg:width="32" dlg:height="12" dlg:value="CurrentType"/>
+ </dlg:bulletinboard>
+</dlg:window>

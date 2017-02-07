@@ -1,0 +1,1580 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+' Standaard Huisstijl Nou&Off: LibreLex
+' versie		datum		notes
+' 0.9.4.0		2012-07-30	the first spread as demo
+' 0.9.6.0		2013-08-13	options for ODDV
+' 0.9.7.0		2013-08-26	fixes in path and name filesaving, transparency in SetPlaatjesProperty
+' 2014-08-29  better contst for Dev-testing
+'             Impress label 'titel (voettekst)' case insensitive
+' 1.0.0			2015-01-13  columns added as possibility for dialogs and extension with custom PRO-VERSION OPTIONS
+' 1.0.1			2015-03-16  improved handling of customer wishes
+' 1.0.2			2015-04-25  various small improvements
+' 1.0.3			2015-05-03	removed bug when selecting Spreadsheet/Presentation/Drawing 
+' 1.0.4			2015-05-11  removed obsolete GTT2()
+'							added German translation
+' 1.1.0
+' 2015-08-27
+' - prevent error in GiveNameAndSeparateExtension
+' - reworked global vars for develop environment
+' - added more general options to settings.ini
+' - implemented option buttons (tab sequence..) and combo boxes
+' - implemented configurable locations, languages, labels, dates, reuse of user data etx etc
+' fixed bug in Controle_Installatie
+' 1.1.0.7
+' 2015-09-02
+' - corrected check on existence of PsLocationsFileName as start
+' - activated/updated FillHandlerInDialog
+' - some clean up and speed up
+' - changed separator for sLanguageMonths (in neohsLanguages.ini) from , to ;
+' - adapted xSizeText; labels were overlapping controls, wich bugged with checks and options
+' - fixed bug with language pattern "D-MMM-YYYY"
+' - handling of various values from settings ini more robust
+' 1.1.1.0
+' 2015-09-16
+' - added public vars for prefix of NP images and frames,
+'   and for some document marker bookmarks,
+'   and for bookmarks for reusing user data
+' 2015-09-16
+'  some bugfixes
+'  added global vars for width of labels and position of text boxes (PnSizeTextWidth, PnPosEditWidth)
+'  added check for global vars with arrays for document sections to be the same size. Exit if not OK.
+' 1.1.1.1
+' 2015-09-21
+' - added option to set PsLogoPaperTray PsBlancPaperTray "", so that no attempt will be made to set tray's by emtpy info
+' 
+' 1.1.2.0
+' 2015-10-15
+' - changed WriteDocUserData so that it allways writes the fields given by the configuration
+'
+' 1.1.3.0
+' 2015-11-16
+' - Fixed bugs for dev-environ
+' - Made more robust wrt default values for incomplete/false ini-files
+'
+' 1.1.3.1
+' 2016-04-20
+' - again a fix in WriteDocUserData to prevent problems with older/absent/different files
+'
+' 1.2.0.0
+' 2016-05-12
+' - added option to skip save dialog with default name for new documents
+' - added filters for Ms 2007-2013 XML
+'
+' 1.3.0.0
+' 2016-05-18
+' - added possibility to specify per document type the file format on saving
+' - added possibility to specify a display name other then the template name
+'
+' 1.3.0.1
+' 2016-06-10
+' - more lines in lstDocSoorten
+'
+' 1.3.0.2
+' 2017-02-05
+' various small bugfixes
+
+Option Explicit
+
+' CONSTANTS FOR PACKAGE/OXT
+' = = = = = = = = = = = = =
+Public Const SHS_VERSIE As String = "1.3.0.1"
+Public Const SHS_DATUM As String = "2016-06-10"
+Public Const SCOPYRIGHTINFO As String = "© Nou&Off  2007/2016."
+Public Const SEXTENSIONIDENTIFIER As String = "nl.nouenoff.librelex.oxt"
+Public Const SMSGTITEL As String = "LibreLex"
+
+' CONSTANTS FOR DEVELOPMENT
+' = = = = = = = = = = = = =
+Public Const BDEBUGMODE as Boolean = TRUE
+Public Const SNAMEDEBUGDATAFILE as String = "neohsDebugInfo"  ' uses routine WriteDebugData
+
+' FOUR CONSTS to be adapted for packaging
+' = = = = = = = = = = = = =
+Public Const SCOMPNAMEDISPLAYED As String = "demo"
+Public Const SCOMPLOGONAME As String = "dlgicons/companylogo.png" ' demo = bxh 189x177 
+Public Const PL_STOPNOW as long = 0  '20161007
+Public Const NLIMITEDNUMBERDOCS As Integer = 0  '3 ' when > 0, limits the number of documents in the document list, used for pilot/evaluation version
+
+' CONST for CUSTOM-VERSION
+' = = = = = = = = = = = = =
+' NOTE stuff adapted for customers marked with
+' Used for img in docDlg > remove, make images default size 
+Public Const SCUSTOMCODE as String = ""
+
+' CONSTS FOR (INI)-FILE NAMES
+' = = = = = = = = = = = = =
+Public Const SDOCININAME As String = "neohsdoc.ini"			' name of ini file with data of documents 
+Public Const SLISTSINISTART As String = "lst_"				' prefix of ini-files with list-box data, e.g. lst_aanhef.ini
+' TODO: check if next is in use...
+Public Const SMDWININAME as String = "/neohsmdw.ini"		' used to store user selections in dialogue and to load them again
+
+Public Const SALLDOCS As String = "[ALL]"					' information about all documents, or the text documents and fields
+Public Const SALLDOCNAMES As String = "[ALL-names]"			' names for all documents, or the text documents and fields
+'Public Const SALLDOCREUSEDATA As String = "[ALL-reusedata]"	' data per docsoort, filed in dialog, reused the next time
+Public Const SALLDOCLABELS As String = "[ALL-labels]"			' labels per docsoort, filed in dialog, reused the next time
+Public Const SALLDOCOPTIONS As String = "[ALL-options]"		' options for all documents, or the text documents and fields
+
+Public Const SODSDOCS As String = "[CALC]"					' information about spreadsheet documents and fields
+Public Const SODSDOCNAMES As String = "[CALC-names]"		' names for spreadsheet documents and fields
+'Public Const SODSDOCREUSEDATA As String = "[CALC-reusedata]"	' data per docsoort, filed in dialog, reused the next time
+Public Const SODSDOCLABELS As String = "[CALC-labels]"			' labels per docsoort, filed in dialog, reused the next time
+Public Const SODSDOCOPTIONS As String = "[CALC-options]"	' options for spreadsheet documents and fields
+
+Public Const SODPDOCS As String = "[IMPRESS]"				' information about presentation documents and fields
+Public Const SODPDOCNAMES As String = "[IMPRESS-names]"		' names for presentation documents and fields
+'Public Const SODPDOCREUSEDATA As String = "[IMPRESS-reusedata]"' data per docsoort, filed in dialog, reused the next time
+Public Const SODPDOCLABELS As String = "[IMPRESS-labels]"			' labels per docsoort, filed in dialog, reused the next time
+Public Const SODPDOCOPTIONS As String = "[IMPRESS-options]"	' options for presentation documents and fields
+
+Public Const SODGDOCSS As String = "[DRAW]"					' information about drawing documents and fields
+Public Const SODGDOCNAMES As String = "[DRAW-names]"		' names for drawing documents and fields
+'Public Const SODGDOCREUSEDATA As String = "[DRAW-reusedata]"	' data per docsoort, filed in dialog, reused the next time
+Public Const SODGDOCLABELS As String = "[DRAW-labels]"			' labels per docsoort, filed in dialog, reused the next time
+Public Const SODGDOCOPTIONS As String = "[DRAW-options]"	' options for drawing documents and fields
+
+'options
+Public Const SNONAMEFORDOCTYPE  As String = "NONE"			' when in third place in section doc-names in neohsdoc.ini the save dialog will not be shown
+' - NotInUse atm
+Public Const SVASTININAME  As String = "neohsvast.ini"				' NotInUse:  information that has to be placed in each document, e.g address in footer 
+' - NotInUse atm
+Public Const SONDTININAME As String = "neohsondt.ini"				' optional file with extra ondertekenaars
+' OK
+Global Const SPRINTERININAME as String = "neohsprinter.ini"
+
+' CONSTS VARIOUS
+' = = = = = = = = = = = = =
+Public Const SVALUETESTENVIRON As String = ""  '"TEST"
+
+' CONSTS FOR PATHS
+' = = = = = = = = = = = = =
+Public Const SDEVELOPPATH_PSEUDOEXTENSION_INI As String = "/home/cono/Documenten/Data/Nou&Off/Projecten/EigenProjecten/LibreLex/Bouwen"
+'Public Const SDEMOTESTPATH as String = "/home/cono/neohs"
+Public Const SDEVELOPPATH_PSEUDOEXTENSION_VARIOUS As String = "/home/cono/Documenten/Data/Nou&Off/Projecten/EigenProjecten/LibreLex/Packaging_Distributing/librelex_packaging"
+Public Const SWORKPATH as String = "$Work"
+Public Const SUSERPATH as String = "$User"
+Public Const SSETTPATHSININAME As String = "ini/settingspath.ini"
+Public Const SSETTINGSININAME As String = "settings.ini"
+Public Const SADMINININAME As String = "ini/admin.ini"
+
+' VARS FOR PATHS
+' = = = = = = = = = = = = =
+Public PsIniPath as String			' path base for ini's, set at start in SetGlobalVars
+Public PsSettingsIniPath as String	' path to settings ini's, set at start in SetGlobalVars
+Public PsottTemplatePath as String	' path for ott (or any type) templates, set at start in SetGlobalVars
+Public PsotsTemplatePath as String	' path for ots templates, set at start in SetGlobalVars
+Public PsotpTemplatePath as String	' path for otp templates, set at start in SetGlobalVars
+Public PsotgTemplatePath as String	' path for otg templates, set at start in SetGlobalVars
+Public PsDataPath as String			' path base for data files
+Public PsCustomfilesPath as String	' default path to store files, set in SetGlobalVars, dependent on OS, is SCUSTOMFILES_PATHWIN or -LINUX
+Public PsGroupPath as String		' path for group ini files (department, afdeling, ..)
+Public PsUserPath as String			' path for user ini files, read & write
+Public PsLogoPath as String			' path for logo's, read
+
+' VARS FOR DIALOG
+' = = = = = = = = = = = = =
+Public PoDocDlg as Object				' the userdialog for creating documents
+Public PbAlleControlesOK as Boolean		' NotInUse: global var to see if all checks on form inputfield are OK
+Public PbInitMyDocDialogForEditing  as Boolean
+Public PoAnyDlg as Object				' for various dlgs
+Public POOoLanguage  As String			' language of the office, for messages to the user and UI strings
+Public PsDocType As String				' current selected type in dlg
+
+' VARS and CONST FOR DOC-DATA / HANDLING
+' = = = = = = = = = = = = =
+Public Const NDOCDATAFLDSTART = 3		' marks the index of the first docfield, in the lines of PsDocSoortenData   ' 0 = name, 2 = display name, 3 = save format
+
+Public PsDocSoorten() as String			' the doctypes, template names, from the SDOCININAME inifile, each template needs the userfield 'neohsdoc' with the doctype as value
+Public PsDocSoortenDisplayNames() as String	' the doctypes, from the SDOCININAME inifile
+
+Public PsDocSoortenData() as String		' the selected doctypes + their bookmarks, from the SDOCININAME inifile
+Public PsDocSoortCurrent() as String	' doc of which controls are placed in odocDlg
+Public PsDocSoortNew() as String		' doc of which controls have to be placed in odocDlg
+
+Public PsDocSoortenNames() as String	' data for names structure for selected doc types, from the SDOCININAME inifile
+Public PsCurrentDocSrtName() as String	' structure for name of current doc type: type, path, structure
+Public PsCurrentDocSrtNameData() as String		' data from fields in dialog for the actual name of current document
+
+'Public PsDocSoortenReuseData() as String	' data for selected doctypes to reuse, fields from doc.ini
+'Public PsCurrentDocSrtReuseData() as String	' data in dlg for current doc to save and to save
+
+Public PsDocSoortenLabels() as String	' labels for selected doctypes, from the SDOCININAME inifile
+Public PsCurrentDocSrtLabels() as String  ' labels for current doc type - still a string to split
+
+Public PsDocSoortenOptions() as String	' options for selected doctypes, from the SDOCININAME inifile
+Public PsCurrentDocSrtOptions() as String ' options for current doc type
+
+Public PsCurrentDocSrtLanguages() as String ' languages for current doc; read from #2 in PsCurrentDocSrtOptions
+Public PsCurrentDocSrtListBoxes() as String ' list boxes "<name>_L" of current doc; replaces older lst_DocsoortenChange var sListBoxes
+
+Public PsFAVDocs() as String			' names favorite doctypes 
+Public PsALLDocs() as String			' names all doctypes 
+Public PsODSDocs() as String			' names ods doctypes 
+Public PsODPDocs() as String			' names odp doctypes 
+Public PsODGDocs() as String			' names odg doctypes 
+
+Public PsFAVDisplayNames() as String	' display names favorite doctypes 
+Public PsALLDisplayNames() as String	' .. all doctypes 
+Public PsODSDisplayNames() as String	' .. ods doctypes 
+Public PsODPDisplayNames() as String	' ..  odp doctypes 
+Public PsODGDisplayNames() as String	' .. odg doctypes 
+
+Public PsFAVDocsData() as String		' favorite doctypes 
+Public PsALLDocsData() as String		' all doctypes 
+Public PsODSDocsData() as String		' ods doctypes 
+Public PsODPDocsData() as String		' odp doctypes 
+Public PsODGDocsData() as String		' odg doctypes 
+
+Public PsFAVDocNames() as String		' name info for fav doctypes
+Public PsALLDocNames() as String		' name info for all doctypes
+Public PsODSDocNames() as String		' name info for the doctypes
+Public PsODPDocNames() as String		' name info for the doctypes
+Public PsODGDocNames() as String		' name info for the doctypes
+
+Public PsFAVDocReuseData() as String	' reusedata info for fav doctypes
+Public PsALLDocReuseData() as String	' reusedata info for all doctypes
+Public PsODSDocReuseData() as String	' reusedata info for the doctypes
+Public PsODPDocReuseData() as String	' reusedata info for the doctypes
+Public PsODGDocReuseData() as String	' reusedata info for the doctypes
+
+Public PsFAVDocLabels() as String		' labels info for fav doctypes
+Public PsALLDocLabels() as String		' labels info for all doctypes
+Public PsODSDocLabels() as String		' labels info for the doctypes
+Public PsODPDocLabels() as String		' labels info for the doctypes
+Public PsODGDocLabels() as String		' labels for the doctypes
+
+Public PsFAVDocOptions() as String		' options info for fav doctypes
+Public PsALLDocOptions() as String		' options info for all doctypes
+Public PsODSDocOptions() as String		' options info for the doctypes
+Public PsODPDocOptions() as String		' options info for the doctypes
+Public PsODGDocOptions() as String		' options info for the doctypes
+
+' CONSTS & VARS FOR USER DATA
+' = = = = = = = = = = = = =
+Public Const SNAMEUSERDATAFILE As String = "neohsUserData.txt"	' in PsUserPath
+Public PsCurrentDocSrtUserData() as String 	' TODO4Customer user data for current doc to load, fields from doc.ini
+
+' CONSTS & VARS FOR LANGUAGES OPTIONS
+' = = = = = = = = = = = = =
+Public Const SLSTLANGUAGES as string = "lstDocLanguages"			' control in the docDialog
+Public Const SLBLLANGUAGES as string = "lblDocLanguages"			' control in the docDialog
+'Public Const SLBLLANGUAGESTEXT as string = "Taal"					' labelin the docDialog
+Public Const SNAMELANGUAGESFILE as string = "neohsLanguages.ini"
+Public CONST PSCURRENTLANGUAGEFILE as String  = "currentLanguage.txt" ' choosen language saved in txt file on PsUserPath
+Public PsCurrentLanguage as String		' name of choosen language, available on start
+Public PnCurrentLanguageNr as Integer	' number of choosen language
+Public PsAllLanguages() as String	' languages allowed, available on start, sequence is used in various other config data
+' see also PsCurrentDocSrtLanguages
+Public PsCurrentLangugeVarStrings() as String	' sSection VarStrings- for PsCurrentLanguage from SNAMELANGUAGESFILE
+
+' CONSTS & VARS FOR LOCATIONS OPTIONS
+' = = = = = = = = = = = = =
+Public Const SLSTLOCATIONS as string = "lstLocations"			' control in the docDialog
+Public Const SLBLLOCATIONS as string = "lblLocations"			' control in the docDialog
+'Public Const SLBLLOCATIONSTEXT as string = "Afdeling/locatie"	' label in the docDialog
+'Public Const SNAMELOCATIONSFILE as string = "neohsLocations.txt"
+Public CONST PSCURRENTLOCATIONFILE as String  = "currentLocation.txt" ' choosen location saved in txt file on PsUserPath
+Public PsAllLocations() as String									' all available locations, available on start
+Public PsCurrentLocation as String									' name of choosen location, available on start
+Public PsCurrentLocationData() as String							' data of choosen location
+
+' CONSTS FOR LOGO OPTIONS
+Public Const SLSTLOGOS as string = "lstLogos"
+Public Const SLBLLOGOS as string = "lblLogos"
+Public Const SNAMELOGOSFILE as string = "neohsLogos.ini"
+
+' CONSTS FOR SIGNED BY OPTIONS
+Public Const SBUTTONSINGINGBY as string = "cmdSigningBy"
+' TODO4Customer plus list to choose names from list + button to start dialog to choose names/locations...
+'Public Const SNAMESINGINGBYFILE as string = "neohs_SigningBy.txt"
+' also see userdata nogwat TODO
+
+' VARS & CONSTS FOR ADDRESS DATA OPTIONS
+'TODO: options select seach option, editSearchString, lstDatabaseEntries
+Public Const SNAMEDATABASEFILE as string = "neohsDataBase.dbf"
+
+' VARS & CONSTS FOR AUTOTEXT OPTIONS
+Public Const SCHECKAUTOTEXT as string = "chkAutoText"
+Public Const SNAMEAUTOTEXTCATEGORY as string = "neohs"
+'Public Const SDEFAULTAUTOTEXTCATEGORY As String = "neohs"			' NotInUse
+
+' VARS FOR OPTIONS PER DOCSOORT
+' read from PsDocSoortenOptions, when used, not with LoadGlobalVars
+Public PbLanguagesUsed as Boolean ' PsCurrentDocSrtLanguages
+Public PbLocationsUsed as Boolean ' see also PsUseLocations read from settings.ini
+Public PbLogosUsed as Boolean
+Public PbSignedByUsed as Boolean
+Public PbAutoTextUsed as Boolean
+Public PbDataBaseUsed as Boolean
+
+' various settings from settings.ini
+Public PnThemeColor as Long				' 0 from setting ini - giving the color of the docWindow
+Public PsLogoPaperTray as String		' 1 from settings.ini - name of tray with logo paper
+Public PsBlancPaperTray as String		' 1 from settings.ini - name of tray with blanc paper
+Public PbAllowOldMsFormats as Boolean 	' 2 from settings.ini - allows for saving new documents as MsOffice formats
+Public PnSizeEditWidth as Integer		' 3 from settings.ini - width of edit boxes in doc dialog; 90 < > 200
+Public PnPosEditWidth as Integer		' 3 from settings.ini - width of edit boxes in doc dialog; 90 < > 200
+Public PnSizeTextWidth as Integer		' 3 from settings.ini - width of edit boxes in doc dialog; 90 < > 200
+Public PbHideFavIcon as Boolean 		' 4 from settings.ini - Hide favorite icon in docDialog
+Public PbSetImageTransparent as Boolean ' 5 from settings.ini - set images transparent when not printed/exported
+Public PsNPImagesPrefix as String		' 6 from settings.ini - prefix for setting Images non printing
+Public PsNPFramesPrefix as String		' 7 from settings.ini - prefix for setting Frames non printing
+Public PsStartPosBM as String			' 8 from settings.ini - bookmark for start position
+Public PsAutoTextPosBM as String		' 9 from settings.ini - bookmark for autotext position
+Public PsDatesBMs as String				' 10 from settings.ini - bookmarks/fields for date to be pre filled
+Public PsHandlerNameBMs as String		' 11 from settings.ini - bookmarks/fields for name to be pre filled
+Public PsReuseUserData as String		' 12 from settings.ini - bookmarks/fields for user data to reuse
+Public PbUseLocations as Boolean 		' 13 from settings.ini - Use of locations; to check existence config files
+Public PsLanguageListBoxLabel as String	' 14 from settings.ini - Labels for Language list box
+Public PsLocationsListBoxLabel as String' 15 from settings.ini - Labels for Location list box
+Public PsLocationsFileName as String	' 16 from settings.ini - name of Locations-file 
+Public PsSectionGeneral as String		' 17 from settings.ini - names first section in Locations-file 
+Public PsSectionLocations as String		' 18 from settings.ini - names second section in neohsLocations.txt
+Public PsLocationsNameBM as String		' 19 from settings.ini - Bookmark for placing Organisation name
+Public PsLocationBMReturnData as String	' 20 from settings.ini - Bookmark for placing Organisation name
+Public PsLocationBmAndValues as String	' 21 from settings.ini - Bookmark for placing Location and array location from CurrentLocationData and the values array location in CurrentLocationData
+Public PsLocationAddressBmAndValues as String	' 22 from settings.ini - Bookmark for placing LocationAddress and the values array locations in CurrentLocationData
+Public PsCountryNameInternational as String		' 23 from settings.ini - country name for international correspondence
+Public PsDlgDatePatterns as String		' 24 from settings.ini - pattern of the dates in dialogs
+'separator of the dates in dialogs, any string or 'space' (without the quotes)
+Public PsDlgDateSeparators as String	' 25 from settings.ini - separator of the dates in dialogs or word 'space'
+Public PsBmLabelPrefix as String		' 26 from settings.ini - prefix for label bookmarks - pattern is prefix<bookmarkname>
+Public PbConditionallyFillLabels as Boolean	' 27 from settings.ini - only fill labels when there is a corresponding value 
+
+' to handle existing documents
+Public PbExistingDoc as Boolean
+Public PbThisIsHuisstijlDoc as Boolean	' check if doc is  huisstijl
+Public PsThisDocsType as String
+
+
+Sub Main
+'Globalscope.BasicLibraries.LoadLibrary("XrayTool")
+StrtDocKeuzeVenster()
+
+'Controle_Installatie
+'	Globalscope.BasicLibraries.LoadLibrary("XrayTool")
+'	msgbox GetGuiType 
+'	msgbox Environ("S_NEOHS_ENVIRON")
+'	msgbox GetItemsInstallPath("work")' ("userurl")
+
+End Sub
+
+'====================================================
+' Name		  :  ReadAdminIniFromExtension 
+' Description :  checks admin ini in extension
+' Arguments   :  -
+' Returns     :  -1 on failure, 1 if OK
+'----------------------------------------------------
+Function ReadAdminIniFromExtension as Integer
+	Dim s$, sFile$
+	Dim n%
+	
+On Error GoTo ErrorHandler
+	
+	sFile = PreserveEndSlash(GetExtensionInstallationDir) & SADMINININAME
+	If Len(sFile) < 3 then sFile = PreserveEndSlash(SDEVELOPPATH_PSEUDOEXTENSION_INI) & SADMINININAME
+
+	If Dir(sFile) = "" Then
+		'do nothing, just to check admin rights
+		ReadAdminIniFromExtension = -1
+	Else
+		ReadAdminIniFromExtension = 1
+	End If
+	
+Exit Function	
+ErrorHandler:
+	ReadAdminIniFromExtension = -1
+	MyErrMessenger("ReadAdminIniFromExtension")
+End Function
+'====================================================
+' Name		  :  GetExtensionInstallationDir 
+' Description :  Necessary to work with ini files, images and templates installed with extensions
+' Arguments   :  -
+' Returns     :  string with path
+'----------------------------------------------------
+Function GetExtensionInstallationDir as String
+    Dim sSrvce$, sPkgLocation$
+    Dim oPkgInfoProvider as Object
+    
+    sSrvce = "com.sun.star.deployment.PackageInformationProvider"
+    oPkgInfoProvider = GetDefaultContext.getValueByName("/singletons/" + sSrvce)
+    ' needed: a unique identifier in the description.xml 
+    ' see org.openoffice.sdk.devguide.extensions.GenericOptionsPagesHandler
+   
+    sPkgLocation = oPkgInfoProvider.getPackageLocation(SEXTENSIONIDENTIFIER)
+    GetExtensionInstallationDir = sPkgLocation
+    
+End Function
+'====================================================
+' Name        :  GetItemsInstallPath
+' Description :  Get Path of installation
+' Arguments   :  Item of which specific path has to be retuned
+' Returns     :  String
+'----------------------------------------------------
+'http://wiki.services.openoffice.org/wiki/Documentation/DevGuide/OfficeDev/Resolving_Path_Variables
+'predefinedPathVariables : home, inst, prog, temp, user, work, path, lang, langid, vlang
+'instpath, progpath, userpath, insturl, progurl, userurl, workdirurl,baseinsturl, userdataurl, brandbaseurl
+' user == userprofile; home == work; workdirurl = myDocuments from LibreOffice
+Function GetItemsInstallPath (sItem$) as String
+	Dim oPathSubst 
+	oPathSubst = createUnoService("com.sun.star.util.PathSubstitution")
+	GetItemsInstallPath =  oPathSubst.getSubstituteVariableValue(sItem)
+End Function
+'====================================================
+' Name		  :  GetPathToIniInExtension
+' Description :  get path to ini in extension package, or local fall back in case of development
+' Arguments   :  -
+' Returns     :  string, full name
+'----------------------------------------------------
+Function GetPathToIniInExtension() as String
+	Dim sFile$
+
+On Error GoTo ErrorHandler
+
+	' get setting path from settingspath.ini in extension file
+	sFile = PreserveEndSlash(GetExtensionInstallationDir) & SSETTPATHSININAME
+	
+	If Dir(sFile) = "" Then
+		' maybe we are in development environ
+		If UCASE(Environ("S_NEOHS_ENVIRON")) = SVALUETESTENVIRON Then
+			sFile = ConvertToURL(PreserveEndSlash(SDEVELOPPATH_PSEUDOEXTENSION_INI) & SSETTPATHSININAME)
+		Else
+			FileNotFoundMessage(SSETTPATHSININAME & GetUIText("Gen_01"))
+			Exit Function
+		End If
+	End If
+	GetPathToIniInExtension = sFile 
+	
+Exit Function	
+ErrorHandler:
+	MyErrMessenger("GetPathToIniInExtension")
+End Function
+'====================================================
+' Name		  :  GetPathToSettings
+' Description :  get path to settings.ini
+' Arguments   :  sFile - path for ini in extension or fall back
+' Returns     :  string, full path, but not name
+'----------------------------------------------------
+Function GetPathToSettings(sFile$) as String
+	Dim sPath$, s$, s2$
+	Dim sArray()
+	Dim n%
+
+On Error GoTo ErrorHandler
+
+	n = FreeFile()
+	Open sFile for Input As #n
+	Do while NOT EOF(n)
+		Line Input #n, s
+		If Left (s, 1) <> "'" Then
+			s2 = trim(s)
+			Exit Do
+		End If
+	Loop
+	Close #n
+	
+	sArray() = Split(s2, ";")
+	If GetGuiType = 1 Then 'win
+		sPath = sArray(0)
+	ElseIf GetGuiType = 4 Then  'nix
+		sPath = sArray(1)
+	ElseIf GetGuiType = 3 Then ' Mac OS
+		If UBound(sArray()) < 2 Then
+			' no path for Mac OS
+			VariousErrorMessage(("Gen_02") & SSETTPATHSININAME  &"." , 48)
+			Exit Function			
+		Else
+			sPath = sArray(2)
+		End If
+	End If	
+	
+	' get settings.ini
+	sPath = PreserveEndSlash(sPath)
+	If Left(sPath, len(SWORKPATH)) = SWORKPATH Then
+		sPath = PreserveEndSlash(GetItemsInstallPath("work")) & Right(sPath, len(sPath)-len(SWORKPATH)-1) 
+	End If
+	
+	GetPathToSettings = ConvertToURL(sPath) '& SSETTINGSININAME
+	
+Exit Function	
+ErrorHandler:
+	MyErrMessenger("GetPathToSettings")
+End Function
+'====================================================
+' ©  Nou&Off     |    2012-03-30   |    ©  www.nouenoff.nl
+' Name		  :  SetGlobalVars 
+' Description :  puts values in global vars
+' Arguments   :  -
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function SetGlobalVars as Integer
+	Dim sArray() as String
+	Dim sArray2() as String
+	Dim sTmp() as String
+	Dim sFile$, s$, s2$, sOSType$
+	Dim n%
+	Dim i%, j%
+	Dim bCrntLangFoundInAllLangues as Boolean
+	Dim bCrntLocnFoundInAllLocns as Boolean
+'	Dim bReading as Boolean
+
+
+On Error GoTo ErrorHandler
+
+	' = = get program language for messages to user 
+	SetPublicVarOOoLanguage (1)
+	
+	' get data from path.ini in extension file
+	' in development NEOHS_ENVIRON it returns an appropriate value too
+	PsSettingsIniPath = GetPathToSettings(GetPathToIniInExtension) 
+	sFile = PsSettingsIniPath & SSETTINGSININAME
+	If Dir(sFile) = "" Then
+		' customer extension on developing system, that does not have the paths in the settings.ini 
+		If UCASE(Environ("S_NEOHS_ENVIRON")) = SVALUETESTENVIRON Then
+			s = ConvertToURL(PreserveEndSlash(SDEVELOPPATH_PSEUDOEXTENSION_INI) & SSETTPATHSININAME)
+			PsSettingsIniPath = GetPathToSettings(s)
+			sFile = PsSettingsIniPath & SSETTINGSININAME
+		Else
+			FileNotFoundMessage(SSETTINGSININAME & GetUIText("Gen_01"), sFile)
+		End If
+	End If
+
+	' exit if not found - error message given previously
+	If sFile = "" Then Exit Function
+	
+	If GetGuiType = 1 Then 'win
+		sOSType = "[WIN]"
+	ElseIf GetGuiType = 4 Then  'nix
+		sOSType = "[NIX]"
+	ElseIf GetGuiType = 3 Then ' Mac OS
+		sOSType = "[MAC]"
+	Else
+		VariousErrorMessage(GetUIText("Gen_03"), 48)
+		SetGlobalVars = -1
+		Exit Function			
+	End If
+
+
+	' = = get general options from settings.ini
+	sArray() = FillArrayFromOneSectionInFile(sFile, "[GENERAL]")
+	'theme;
+	s = sArray(0)
+	If instr(s,";") > 0 then
+		PnThemeColor = Right(s, len(s)-instr(s,";")) 
+	Else
+		PnThemeColor = ""
+	End If
+	
+	'trays;
+	If uBound(sArray()) > 0 then
+		s = GetStringAfterSeparator(sArray(1),";")
+		sArray2() = Split(s, ",")
+		If uBound(sArray2()) > 0 then 
+			PsLogoPaperTray = sArray2(0) 
+			PsBlancPaperTray = sArray2(1) 
+		Else
+			PsLogoPaperTray = "" : PsBlancPaperTray	= ""
+		End If
+	End If
+	
+	'oldmsformats;
+	If uBound(sArray()) > 1 then
+		If UCase(GetStringAfterSeparator(sArray(2),";")) = "TRUE" Then PbAllowOldMsFormats = TRUE
+	End If
+	'width of edit boxes in docDlg
+	If uBound(sArray()) > 2 then
+		s2 = GetStringAfterSeparator(sArray(3),";")
+		sArray2() = Split(s2, ",")
+		
+		PnSizeTextWidth = CInt(sArray2(0))
+		PnPosEditWidth = CInt(sArray2(1))
+		PnSizeEditWidth = CInt(sArray2(2))
+	End If
+	If PnSizeTextWidth < 30 then PnSizeTextWidth = 30
+	If PnSizeTextWidth > 80 then PnSizeTextWidth = 80
+	If PnPosEditWidth < 60 then PnPosEditWidth = 60
+	If PnPosEditWidth > 90 then PnPosEditWidth = 90
+	If PnSizeEditWidth < 75 then PnSizeEditWidth = 75
+	If PnSizeEditWidth > 200 then PnSizeEditWidth = 200
+
+	If uBound(sArray()) > 3 then
+	'Hide favorite icon in doc dialog
+		If UCase(GetStringAfterSeparator(sArray(4),";")) = "TRUE" Then PbHideFavIcon = TRUE
+	'set images transparent when not printed/exported
+		If UCase(GetStringAfterSeparator(sArray(5),";")) = "TRUE" Then PbSetImageTransparent = TRUE
+		
+		PsNPImagesPrefix = GetStringAfterSeparator(sArray(6),";")
+		PsNPFramesPrefix = GetStringAfterSeparator(sArray(7),";")
+		PsStartPosBM = GetStringAfterSeparator(sArray(8),";")
+		PsAutoTextPosBM = GetStringAfterSeparator(sArray(9),";")
+		PsDatesBMs = GetStringAfterSeparator(sArray(10),";")
+		PsHandlerNameBMs = GetStringAfterSeparator(sArray(11),";")
+		PsReuseUserData = GetStringAfterSeparator(sArray(12),";")
+		If UCase(GetStringAfterSeparator(sArray(13),";")) = "TRUE" Then PbUseLocations = TRUE
+		PsLanguageListBoxLabel = GetStringAfterSeparator(sArray(14),";")
+		PsLocationsListBoxLabel = GetStringAfterSeparator(sArray(15),";")
+		PsLocationsFileName = GetStringAfterSeparator(sArray(16),";")
+		PsSectionGeneral = GetStringAfterSeparator(sArray(17),";")
+		PsSectionLocations = GetStringAfterSeparator(sArray(18),";")
+		PsLocationsNameBM  = GetStringAfterSeparator(sArray(19),";")
+		PsLocationBMReturnData = GetStringAfterSeparator(sArray(20),";")
+		PsLocationBmAndValues = GetStringAfterSeparator(sArray(21),";")
+		PsLocationAddressBmAndValues = GetStringAfterSeparator(sArray(22),";")
+		PsCountryNameInternational = GetStringAfterSeparator(sArray(23),";")
+		PsDlgDatePatterns = GetStringAfterSeparator(sArray(24),";")
+		PsDlgDateSeparators = GetStringAfterSeparator(sArray(25),";")
+		PsBmLabelPrefix = GetStringAfterSeparator(sArray(26),";")
+		If UCase(GetStringAfterSeparator(sArray(27),";")) = "TRUE" Then PbConditionallyFillLabels = TRUE
+	End If
+
+	' = = get the other options from settings.ini
+	Redim sArray() 
+	sArray() = FillArrayFromOneSectionInFile(sFile, sOSType)
+	
+	PsIniPath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(0), ";")
+	PsottTemplatePath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(1), ";")
+	PsotsTemplatePath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(2), ";")
+		If PsotsTemplatePath = "" then PsotsTemplatePath = PsottTemplatePath 
+	PsotpTemplatePath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(3), ";")
+		If PsotpTemplatePath = "" then PsotpTemplatePath = PsottTemplatePath 
+	PsotgTemplatePath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(4), ";")
+		If PsotgTemplatePath = "" then PsotgTemplatePath = PsottTemplatePath 
+	PsDataPath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(5), ";")
+	PsCustomfilesPath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(6), ";")
+	' check on size of array, in older versions
+	' before Janaury 2015) there were only 7 items, after that date 9
+	If UBound(sArray())> 6 Then
+		PsGroupPath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(7), ";")
+		PsUserPath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(8), ";")
+		PsLogoPath = GetURLorWORKorUSERPATH_AfterSeparator(sArray(9), ";")
+	End If
+
+	' = = get available languages SNAMELANGUAGESFILE
+	sTmp() = FillArrayFromOneSectionInFile(PsIniPath & SNAMELANGUAGESFILE, "[neohsLanguages]")
+	PsAllLanguages() = Split(sTmp(0),";")
+
+	' = = get available locations from PsLocationsFileName
+	If PbUseLocations Then
+		If Dir(PsSettingsIniPath & PsLocationsFileName) = "" Then
+			VariousErrorMessage(GetUIText("Sta_08a") & " (" & PsLocationsFileName & ") " & GetUIText("Sta_08b"), 48)
+			PbUseLocations = FALSE
+		Else
+			PsAllLocations() = FillArrayFromOneSectionInFile(PsSettingsIniPath & PsLocationsFileName, PsSectionLocations)
+			If UBound(PsAllLocations()) < 0 Then
+				VariousErrorMessage(GetUIText("Sta_08c") & " (" & PsSectionLocations & GetUIText("Sta_08d") & ") " & GetUIText("Sta_08b"), 48)
+				PbUseLocations = FALSE
+'				SetGlobalVars = -1
+				' TODO
+'				StartFillingLocationData
+				Exit Function
+			End If
+		End If
+	End If
+
+	If PbUseLocations Then
+		' = = get current location from PSCURRENTLOCATIONFILE
+		PsCurrentLocation = FillVarFromOneLineIni(PsUserPath & PSCURRENTLOCATIONFILE)
+		If PsCurrentLocation = "" AND Not Ubound(PsAllLocations()) < 0 Then
+			PsCurrentLocation = PsAllLocations(0)
+			WriteVarToOneLineIni(PsUserPath & PSCURRENTLOCATIONFILE, PsCurrentLocation)
+		Else
+			' prevent trouble when available location in user profile is from an other locations-file...
+			For j = 0 to uBound(PsAllLocations())
+				If PsAllLocations(j) = PsCurrentLocation Then bCrntLocnFoundInAllLocns = TRUE
+			Next
+			If Not bCrntLocnFoundInAllLocns Then PsCurrentLocation = PsAllLocations(0)
+		End If
+	End If
+
+	' = = get current language from PSCURRENTLANGUAGEFILE
+	' TODO make is possible to skip language file?
+	PsCurrentLanguage = FillVarFromOneLineIni(PsUserPath & PSCURRENTLANGUAGEFILE)
+	If PsCurrentLanguage = "" Then
+		PsCurrentLanguage = PsAllLanguages(0)
+		WriteVarToOneLineIni(PsUserPath & PSCURRENTLANGUAGEFILE, PsCurrentLanguage)
+	Else
+		' prevent trouble when available language in user profile is from an other languages-file...
+		For j = 0 to uBound(PsAllLanguages())
+			If PsAllLanguages(j) = PsCurrentLanguage Then bCrntLangFoundInAllLangues = TRUE
+		Next
+		If Not bCrntLangFoundInAllLangues Then PsCurrentLanguage = PsAllLanguages(0)
+	End If
+	
+	SetGlobalVars = 1
+	
+Exit Function	
+ErrorHandler:
+	SetGlobalVars = -1
+	MyErrMessenger("SetGlobalVars ( i = " & i & " ).")
+End Function
+'====================================================
+' Name        :  GetStringAfterSeparator
+' Description :  get string from string
+' Arguments   :  string and separator
+' Returns     :  string
+'----------------------------------------------------
+Function GetStringAfterSeparator (sToRead$, sSeparator$) as String
+	Dim s() as String
+	s() = Split(sToRead,sSeparator)
+	If uBound(s()) > -1 Then GetStringAfterSeparator = s(uBound(s())) 
+End Function
+'====================================================
+' Name        :  GetURLorWORKorUSERPATH_AfterSeparator
+' Description :  get path-value from string
+' Arguments   :  string and separator
+' Returns     :  string
+'----------------------------------------------------
+Function GetURLorWORKorUSERPATH_AfterSeparator (sToRead$, sSeparator$) as String
+	Dim sTmp$
+	Dim s() as String
+	
+	s() = Split(sToRead,sSeparator)
+	sTmp = s(uBound(s()))
+	
+	If Left(sTmp, len(SWORKPATH)) = SWORKPATH Then
+		If len(sTmp) = len(SWORKPATH) Then
+			sTmp = PreserveEndSlash(GetItemsInstallPath("work"))
+		Else
+			sTmp = PreserveEndSlash(GetItemsInstallPath("work")) & Right(sTmp, len(sTmp)-len(SWORKPATH)-1) 
+		End If
+	ElseIf Left(sTmp, len(SUSERPATH)) = SUSERPATH Then
+		If len(sTmp) = len(SUSERPATH) Then
+			sTmp = PreserveEndSlash(GetItemsInstallPath("user"))
+		Else
+			sTmp = PreserveEndSlash(GetItemsInstallPath("user")) & Right(sTmp, len(sTmp)-len(SUSERPATH)-1) 
+		End If
+	End If
+	GetURLorWORKorUSERPATH_AfterSeparator = ConvertToURL(sTmp)
+	
+End Function
+'====================================================
+' Name        :  PreserveEndSlash
+' Description :  make sure there is an / at the end
+' Arguments   :  path
+' Returns     :  string
+'----------------------------------------------------
+Function PreserveEndSlash(sPath$) as String
+	If Right(sPath, 1) <> "/" AND Right(sPath, 1) <> "\" Then
+		 PreserveEndSlash = sPath & "/"
+	Else
+		PreserveEndSlash = sPath 
+	End If
+End Function
+'====================================================
+' Name        :  LoadMyDocTypesInPublicVar
+' Description :  loads name huisstijlDoc in publ. var, and sets public var PbThisIsHuisstijlDoc
+' Arguments   :  -
+' Returns     :  Boolean, also sets public var PbThisIsHuisstijlDoc
+'----------------------------------------------------
+Function LoadMyDocTypesInPublicVar () as Boolean
+	Dim s$
+	Dim oFieldMasters, oFieldMaster ', oFieldsSetInfo, oField
+	
+On Error goto ErrorHandler
+
+	oFieldMasters = ThisComponent.getTextFieldMasters()
+	s = "com.sun.star.text.FieldMaster.User.huisstijldoc"
+
+	If oFieldMasters.hasbyname(s) Then
+		oFieldMaster = oFieldMasters.getByName(s)
+		PsThisDocsType  = oFieldMaster.getPropertyValue("Content")
+		PbThisIsHuisstijlDoc = True
+	Else
+		PbThisIsHuisstijlDoc = False
+	End If	
+
+	' All OK
+	LoadMyDocTypesInPublicVar = PbThisIsHuisstijlDoc
+
+Exit Function
+ErrorHandler:
+	' Failure, So return False
+	LoadMyDocTypesInPublicVar = False
+	MyErrMessenger("LoadMyDocTypesInPublicVar")
+End Function
+'====================================================
+' Name        :  SetMyFieldValue 
+' Description :  Routine to set value of various field types
+' Arguments   :  Document, FieldType, Fieldname
+' Returns     :  1 if OK; -1 on failure
+'----------------------------------------------------
+Function SetMyFieldValue (oDoc as Object, sFieldType$, sFieldName$, sValue) as Integer
+	Dim oFieldMasters as object
+   	Dim oFieldMaster as Object
+	Dim sFldFullName$
+	
+On Error GoTo ErrorHandler
+
+	oFieldMasters = oDoc.getTextFieldMasters()
+
+	Select Case sFieldType
+	Case "User"  
+		sFldFullName = "com.sun.star.text.FieldMaster.User." & sFieldName
+		If oFieldMasters.hasbyname(sFldFullName) Then     
+			oFieldMaster = oFieldMasters.getByName(sFldFullName) 
+			oFieldMaster.setPropertyValue("Content", sValue)
+		Else
+		VariousErrorMessage(GetUIText("Gen_04") & sFieldType & ", " & sFieldName, 48)
+		End if
+	Case "Variable"
+		' Not yet Implemented
+	Case Else
+		VariousErrorMessage(GetUIText("Gen_05") & sFieldType & ". " & chr(13) & GetUIText("Gen_05a"), 16)
+	End Select
+	
+	' All OK
+	SetMyFieldValue = 1
+	
+Exit Function
+ErrorHandler:
+	SetMyFieldValue = -1
+	MyErrMessenger("SetMyFieldValue")
+End Function
+'====================================================
+' Name        :  GetMyFieldValue
+' Description :  Reads USER field from document
+' Arguments   :  name 
+' Returns     :  string with found value, empty if none
+'----------------------------------------------------
+Function GetMyFieldValue (sName$) as String
+	Dim s$
+	Dim oFieldMasters, oFieldMaster
+
+	oFieldMasters = ThisComponent.getTextFieldMasters()
+	s = "com.sun.star.text.FieldMaster.User." & sName
+	If oFieldMasters.hasbyname(s) Then    
+		oFieldMaster = oFieldMasters.getByName(s)
+		GetMyFieldValue = oFieldMaster.getPropertyValue("Content")
+	End If
+	
+End Function
+'====================================================
+' Name        :  AddMyDocProp
+' Description :  Add CDP, if it doesn't already exist, else set value
+' Arguments   :  name and value
+' Returns     :  1 if OK, -1 if false
+'----------------------------------------------------
+Function AddMyDocProp (sName$, sValue$) as Integer
+	Dim oDocInfo, oDocSetInfo
+
+On Error GoTo ErrorHandler
+
+	If HasUnoInterfaces(ThisComponent, "com.sun.star.document.XDocumentInfoSupplier") Then
+	' 3.x
+		oDocInfo = ThisComponent.getDocumentInfo()
+		oDocSetInfo = oDocInfo.getPropertySetInfo
+	Else
+		oDocSetInfo = ThisComponent.getDocumentProperties.getUserDefinedProperties.getPropertySetInfo
+		oDocInfo = ThisComponent.getDocumentProperties.getUserDefinedProperties
+	End If
+
+	If Not oDocSetInfo.hasPropertyByName(sName) Then
+		oDocInfo.addProperty (sName, 0, sValue)
+	Else
+		oDocInfo.setPropertyValue (sName, sValue)
+	End If
+
+	AddMyDocProp = 1
+Exit Function
+ErrorHandler:	
+	AddMyDocProp = -1
+	MyErrMessenger ("AddMyDocProp")
+End Function
+'====================================================
+' Name        :  ReadMyDocProp
+' Description :  Reads CPS if it exist
+' Arguments   :  sName
+' Returns     :  value or empty string
+'----------------------------------------------------
+Function ReadMyDocProp (sName$) as String
+	Dim oDocInfo, oDocSetInfo
+	Dim aProp as new com.sun.star.beans.Property
+	
+On Error GoTo ErrorHandler
+
+	If HasUnoInterfaces(ThisComponent, "com.sun.star.document.XDocumentInfoSupplier") Then
+	' 3.x
+		oDocInfo = ThisComponent.getDocumentInfo()
+		oDocSetInfo = oDocInfo.getPropertySetInfo
+	Else
+		oDocSetInfo = ThisComponent.getDocumentProperties.getUserDefinedProperties.getPropertySetInfo
+		oDocInfo = ThisComponent.getDocumentProperties.getUserDefinedProperties
+	End If
+
+ 	If oDocSetInfo.hasPropertyByName(sName) Then
+		ReadMyDocProp =	oDocInfo.getPropertyValue(sName) 
+	End If	
+
+	Exit Function
+ErrorHandler:	
+	 MyErrMessenger "ReadMyDocProp"
+End Function
+'====================================================
+' Name        :  GoToMyBookmark
+' Description :  Go to bookmark in Document
+' Arguments   :  Document, BookmarkName, Extend cursor or not
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function GoToMyBookmark (oDoc, sBMName$, Optional bExtend as Boolean) as Integer
+	Dim oBookmark as Object
+	Dim oBookmarks as Object
+	Dim oViewCursor as Object
+	
+On Error GoTo ErrorHandler
+
+	oBookMarks = oDoc.getBookmarks()
+	If oBookMarks.hasByName(sBMName) Then
+		oBookmark = oDoc.Bookmarks.getByName(sBMName)
+		oViewCursor = ThisComponent.getCurrentController.getViewCursor()
+		oViewCursor.goToRange (oBookmark.Anchor, bExtend)
+		GoToMyBookmark = 1
+	Else
+		GoToMyBookmark = -1	
+	End If
+		
+Exit Function
+ErrorHandler:
+	GoToMyBookmark = -1
+	MyErrMessenger("GoToMyBookmark")
+End Function
+'====================================================
+' Name        :  FillMyBookmark 
+' Description :  Fill bookmark in Document
+' Arguments   :  Document, BookmarkName, Extend or not
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function FillMyBookmark (oDoc, sBMName$, s$, Optional bExtend as Boolean) as Integer
+	Dim oBookmark, oBookmarks
+	
+On Error GoTo ErrorHandler
+
+	oBookMarks = oDoc.getBookmarks()
+	If oBookMarks.hasByName(sBMName) Then
+		oBookMark = oBookMarks.getByName(sBMName)
+		oBookMark.Anchor.setString(s)
+		FillMyBookmark = 1
+	Else
+		FillMyBookmark = -1	
+	End If
+	
+Exit Function
+ErrorHandler:
+	FillMyBookmark = -1
+	MyErrMessenger("FillMyBookmark")
+End Function
+'====================================================
+' Name        :  ReadMyBookmark 
+' Description :  Read bookmark value from Document
+' Arguments   :  Document, BookmarkName, Extend or not
+' Returns     :  String
+'----------------------------------------------------
+Function ReadMyBookmark (oDoc, sBMName) as String
+	Dim oBookmark, oBookmarks
+	Dim s$
+	
+On Error GoTo ErrorHandler
+
+	oBookMarks = oDoc.getBookmarks()
+	If oBookMarks.hasByName(sBMName) Then
+		oBookMark = oBookMarks.getByName(sBMName)
+		s = oBookMark.Anchor.getString
+	End If
+	ReadMyBookmark = s
+	
+Exit Function
+ErrorHandler:
+	ReadMyBookmark = ""
+	MyErrMessenger("ReadMyBookmark")
+End Function
+'====================================================
+' Description :  PlaceMyAutotext at bookmark or cursorposition in Document
+' Arguments   :  AutotextCatagory, AutotextName (abreviation!),
+'                sBookmarkToPlace = string with name where autotext have to be placed
+'                                  if "", bookmarks placed at cursor
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function PlaceMyAutotext(sCategory$, sName$, sBookmarkToPlace$) as Integer
+	Dim oBookMark, oBookMarks
+	Dim oTextCursor, oAutoTextContainer, oGroup, oEntry
+	Dim bUseCursorPosition as Boolean
+	
+On Error GoTo ErrorHandler
+	
+	' if no bookmark name is given, use cursor
+	If len(trim(sBookmarkToPlace)) = 0 Then 
+		bUseCursorPosition = TRUE
+	End If
+
+	' Check if given bookmarkname exists
+	oBookMarks = ThisComponent.getBookmarks
+	If oBookMarks.hasByName(sBookmarkToPlace & "1") Then
+		oBookMark = oBookMarks.getByName(sBookmarkToPlace & "1")
+	ElseIf oBookMarks.hasByName(sBookmarkToPlace) Then
+		oBookMark = oBookMarks.getByName(sBookmarkToPlace)
+	Else
+		' if bookmark misses, use cursor position
+		bUseCursorPosition = TRUE
+	End If
+	
+	' if a valid bookmark is given ...
+	If not bUseCursorPosition Then
+		oTextCursor = oBookMark.getAnchor
+	Else
+		' use cursor position
+		oTextCursor = ThisComponent.currentController.getViewCursor()
+	End If
+	
+	oAutoTextContainer = createUnoService("com.sun.star.text.AutoTextContainer")
+	oGroup = oAutoTextContainer.getByName(sCategory)
+	oEntry = oGroup.getByName(sName)
+	oEntry.applyTo(oTextCursor) 
+
+	PlaceMyAutotext = 1
+	
+Exit Function
+ErrorHandler:
+	PlaceMyAutotext = -1
+	MyErrMessenger("PlaceMyAutotext" & "groep: "  & sCategory & "Naam: " & sName)
+End Function
+'-------------------------------------------------------------------------
+
+sub TEST_GiveMyDateInLanguageAndPattern
+SetGlobalVars
+PsCurrentLanguage = "Engels" ' "Nederlands" "Engels" "Frans" "Duits"
+PnCurrentLanguageNr = "1"
+msgbox GiveMyDateInLanguageAndPattern
+end sub
+'====================================================
+' Description :  makes that graphic is not linked, but embedded
+' Arguments   : uses global PsDlgDatePatterns, PsDlgDateSeparators, PsCurrentLanguage
+' Returns     :  string
+'----------------------------------------------------
+Function GiveMyDateInLanguageAndPattern() as String
+	Dim s$, sSection$, sSprtr$, sPtrnsLanguage$
+	Dim sSprtrArray() as String
+	Dim sArray() as String
+	Dim sLanguageMonths() as String
+	Dim sPtrnLanguages() as String , sPtrn() as String
+	Dim sYr$, sMnth$, sD$
+	Dim sYear$, sMonth$, sDay$
+	Dim nMonth%
+	
+	Dim myDate as Date
+	myDate = Date
+
+	sYear = Year(MyDate)
+	sMonth = Month(myDate)
+	sDay = Day(myDate)
+	
+	sPtrnLanguages() = Split(PsDlgDatePatterns, ",")
+	If PnCurrentLanguageNr > UBound(sPtrnLanguages()) Then
+		' Fall back, take first one
+		sPtrnsLanguage = sPtrnLanguages(0)
+	Else
+		sPtrnsLanguage = sPtrnLanguages(PnCurrentLanguageNr)
+	End If
+ 	'sPtrn = sPtrnLanguages(PnCurrentLanguageNr)
+ 	sPtrn = split(sPtrnsLanguage, "-")
+	If Left(sPtrn(0), 1) ="Y" Then
+		sYr = sPtrn(0)
+		If Left(sPtrn(1), 1) ="M" Then
+			sMnth = sPtrn(1)
+			sD = sPtrn(2)
+		Else
+			sMnth = sPtrn(2)
+			sD = sPtrn(1)
+		End If
+	ElseIf Left(sPtrn(0), 1) ="M" Then
+		sMnth = sPtrn(0)
+		If Left(sPtrn(1), 1) ="Y" Then
+			sYr = sPtrn(1)
+			sD = sPtrn(2)
+		Else
+			sYr = sPtrn(2)
+			sD = sPtrn(1)
+		End If	
+	ElseIf Left(sPtrn(0), 1) ="D" Then
+		sD = sPtrn(0)
+		If Left(sPtrn(1), 1) ="Y" Then
+			sYr = sPtrn(1)
+			sMnth = sPtrn(2)
+		Else
+			sYr = sPtrn(2)
+			sMnth = sPtrn(1)
+		End If	
+	End If
+		
+	Select Case sYr
+		Case "YY"
+			sYear = Right(sYear,2)
+		Case "YYYY"
+			' sYear = OK
+		Case Else
+	End Select
+	
+	Select Case sMnth
+		Case "M"
+			'sMonth = OK
+		Case "MM"
+			If Len(sMonth) =  1 then sMonth = "0" & sMonth
+		Case "MMM"
+			' get full name, language dependent
+			'uses PsCurrentLanguage
+			sSection = "[Months-" & PsCurrentLanguage & "]"
+			sArray = FillArrayFromOneSectionInFile(PsIniPath & SNAMELANGUAGESFILE, sSection)
+			If UBound(sArray()) < 0 Then
+				' fall back to MM
+				If Len(sMonth) =  1 then sMonth = "0" & sMonth
+			Else
+				sLanguageMonths() = split(sArray(0), ";")
+				nMonth = cInt(sMonth)
+				If nMonth > UBound(sLanguageMonths()) Then
+					' FALL BACK take first one
+					sMonth = sLanguageMonths(0)
+				Else
+					sMonth = sLanguageMonths(nMonth-1)
+				End If
+			End If
+		Case Else
+	End Select
+
+	Select Case sD
+		Case "DD"
+			If Len(sDay) =  1 then sDay = "0" & sDay
+		Case "D"
+			' sDay is OK
+		Case Else
+	End Select
+	
+	sSprtrArray() = Split(PsDlgDateSeparators, ",")
+	If PnCurrentLanguageNr > UBound(sSprtrArray()) Then
+		' Fall back, take first one
+		sSprtr = sSprtrArray(0)
+	Else
+		sSprtr = sSprtrArray(PnCurrentLanguageNr)
+	End If
+	If lCase(sSprtr) = "space" then sSprtr = " "
+	Select Case sPtrnsLanguage
+		Case "YYYY-MM-DD"
+			s = sYear & sSprtr & sMonth & sSprtr & sDay
+		Case "YY-MM-DD"
+			s = sYear & sSprtr & sMonth & sSprtr & sDay
+
+		Case "DD-MM-YY"
+			s = sDay & sSprtr & sMonth & sSprtr & sYear
+		Case "DD-MMM-YY"
+			s = sDay & " " & sMonth & " " & sYear
+		Case "DD-MMM-YYYY"
+			s = sDay & " " & sMonth & " " & sYear
+		Case "D-M-YY"
+			s = sDay & sSprtr & sMonth & sSprtr & sYear
+		Case "D-MMM-YYYY"
+			s = sDay & " " & sMonth & " " & sYear
+
+		Case "MM-DD-YYYY"
+			s = sMonth & sSprtr & sDay & sSprtr & sYear
+		Case "MM-D-YYYY"
+			s = sMonth & sSprtr & sDay & sSprtr & sYear
+		Case "MMM-D-YYYY"
+			s = sMonth & " " & sDay & " " & sYear
+		Case "M-D-YY"
+			s = sMonth & sSprtr & sDay & sSprtr & sYear
+		Case "M-D-YYYY"
+			s = sMonth & sSprtr & sDay & sSprtr & sYear
+
+		Case Else
+			s = sDay & sSprtr & sMonth & sSprtr & sYear
+	End Select
+	
+	GiveMyDateInLanguageAndPattern = s
+	
+End Function
+'====================================================
+' Name        :  GiveYYYY-MM-DD_Datum
+' Description :  makes date YYMMDD
+' Arguments   :  
+' Returns     :  String
+'----------------------------------------------------
+Private Function GiveYYYYMMDDDatum as String
+	Dim myDate as Date
+	Dim s$, s1$
+	
+	myDate = Date
+	s1 = Day(myDate)
+	If Len(s1) =  1 then s1 = "0" & s1
+	s = Month(myDate)
+	If Len(s) =  1 then s = "0" & s
+	GiveYYYYMMDDDatum =  Year(myDate) & "-" & s & "-" & s1
+	
+End Function
+'====================================================
+' Name        :  GiveYYMMDDatum 
+' Description :  makes date YYMMDD
+' Arguments   :  
+' Returns     :  String
+'----------------------------------------------------
+Private Function GiveYYMMDDatum as String
+	Dim myDate as Date
+	Dim s$, s1$
+	
+	myDate = Date
+	s1 = Day(myDate)
+	If Len(s1) =  1 then s1 = "0" & s1
+	s = Month(myDate)
+	If Len(s) =  1 then s = "0" & s	
+	GiveYYMMDDatum =  Right(Year(myDate), 2) & s1 & s
+	
+End Function
+'====================================================
+' Name        :  GiveOndtVolgNr 
+' Description :  reads VolgNr from mdw.ini on path
+' Arguments   :  
+' Returns     :  String
+'----------------------------------------------------
+' TODO
+Private Function GiveOndtVolgNr as String ' not in use
+	Dim sFile$, s$, s2$
+	Dim i&
+	Dim n%
+	
+On Error GoTo ErrorHandler
+	
+	sFile = PsIniPath &  PsOndtData(11,1) & ".ini"
+
+	If Dir(sFile) = "" Then
+		' first start, no ondt.ini yet
+		GiveOndtVolgNr = "001"
+		Exit Function
+	End If
+	n = FreeFile()
+		
+	Open sFile for Input As #n
+	Do while NOT EOF(n)
+		Line Input #n, s
+	Loop
+	Close #n
+	
+	s2 = Right(s, 1)
+	i = CLng(s2) + 1
+	s2 = Left(s, Len(s)-1) & i
+	Do While Len(s2) < 3 
+		s2 = "0" & s2
+	Loop
+	GiveOndtVolgNr = s2
+	
+Exit Function
+ErrorHandler:
+	GiveOndtVolgNr =  ""
+	MyErrMessenger("GiveOndtVolgNr")
+End Function 
+'====================================================
+' Name        :  WriteOndtVolgNr
+' Description :  increses VolgNr in mdw.ini on path
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Private Function WriteOndtVolgNr ' not in use
+	Dim sFile$, s$, s2$
+	Dim i&
+	Dim n%
+
+On Error GoTo ErrorHandler
+	
+	sFile = PsIniPath &  PsOndtData(11,1) & ".ini"
+
+	'Get current number
+	If Dir(sFile) = "" Then
+		' first start, no ondt.ini yet
+		s = "001"
+	Else
+		n = FreeFile()
+			
+		Open sFile for Input As #n
+		Do while NOT EOF(n)
+			Line Input #n, s
+		Loop
+		Close #n
+		' increse number
+		s2 = Right(s, 1)
+		i = CLng(s2) + 1
+		s2 = Left(s, Len(s)-1) & i
+		s = s2
+	End If
+	' now write number
+	n = FreeFile()
+	Open sFile for Output As #n
+	Print #n, s
+	Close #n	
+	
+Exit Function
+ErrorHandler:
+	WriteOndtVolgNr =  ""
+	MyErrMessenger("WriteOndtVolgNr")
+End Function 
+'====================================================
+' Name        :  PlaceGraphicInTextDoc
+' Description :  embeds graphic and places it in text content of document
+' Arguments   :  sGraphicFullName =  path of the graphic
+'             :  sBookmarkName$ = may be empty, then the sSearchString is used
+'             :  sSearchString$ = may be empty
+'             :  sNameInDoc = name as visible in document
+'             :  lHeight and lWidth (1/1000 cm) may be 0 then a small graphic is placed: 0.57 cm^
+' Returns     :  1 if OK; -1 in Not OK
+'----------------------------------------------------
+Private Function PlaceGraphicInTextDoc (oDoc as Object, sGraphicFullName$, sBookmarkName$, sSearchString$, sNameInDoc$, lHeight&, lWidth&) as Integer
+	Dim nResult%, i%
+	Dim oDrawPage, oGraph
+	Dim sURL$,  cUrl$, sCellName$
+	Dim oSize
+	Dim oText, oCursor, oBookmark, oAnchor, oTable, oFrame
+	Dim bInTable as Boolean
+	Dim oDescriptor, oFoundAll, oFound
+	Dim bPlaceAtBookMark as Boolean
+	Dim bSetSize as Boolean
+	Dim bInFrame as Boolean
+	
+On Error GoTo ErrorHandler
+
+' choose to use bookmark or a string to find the picture's place
+	If sBookmarkName <> "" Then bPlaceAtBookMark = TRUE
+
+'Check for bookmark!
+	If Not oDoc.Bookmarks.hasByName(sBookmarkName)	Then
+		VariousErrorMessage(GetUIText("Gen_06a") & sBookmarkName & GetUIText("Gen_06b") & CHr(13) &_
+		GetUIText("Gen_06c") & sNameInDoc & GetUIText("Gen_06d"), 16)
+		PlaceGraphicInTextDoc = -1
+		Exit Function
+	End If
+	
+'Check for graphic!
+	If Dir(sGraphicFullName) = "" Then
+		VariousErrorMessage(GetUIText("Gen_07a")& sGraphicFullName & GetUIText("Gen_07b") & CHr(13) &_
+		GetUIText("Gen_07a") & sNameInDoc & GetUIText("Gen_07c"), 16)
+		PlaceGraphicInTextDoc = -1
+		Exit Function
+	End If
+		
+' find the place to insert the picture
+	If Not bPlaceAtBookMark Then
+		oDescriptor = ThisComponent.createSearchDescriptor()
+		oDescriptor.SearchString = sSearchString
+		oFoundAll = ThisComponent.findAll(oDescriptor)
+		
+		' mind! if it is OK, ther only will be one instance
+		For i = 0 to oFoundAll.getCount()-1
+			' mind! IIRC, via ComBridge one cannot acces the content of the returnd array oFoundAll()
+			oFound = oFoundAll.getByIndex(i)
+			oTable = oFound.TextTable
+			If Not isEmpty(oTable) Then bInTable = TRUE
+		Next	
+	Else
+		oBookmark = oDoc.Bookmarks.getByName(sBookmarkName)
+		oAnchor = oBookmark.getAnchor
+		oTable = oBookmark.Anchor.TextTable
+		If Not isEmpty(oTable) Then bInTable = TRUE
+		oFrame = oBookmark.Anchor.TextFrame
+		If Not isEmpty(oFrame) Then bInFrame = TRUE
+	End If
+	
+' prepare the cursor
+	If bInTable Then
+		If Not bPlaceAtBookMark Then
+			sCellName = oFound.Cell.CellName
+		Else
+			sCellName = ThisComponent.Bookmarks.getByName(sBookmarkName).getAnchor.getStart.Cell.CellName
+		End If
+		oText = oTable.getCellByName(sCellName).getText()
+ 		oCursor = oText.createTextCursor() 
+		If Not bPlaceAtBookMark Then
+			oCursor.gotoRange (oFound, FALSE)
+		Else
+			oCursor.gotoRange (oAnchor, FALSE)
+		End If
+	Else
+		If bInFrame Then
+			oText = oFrame.getText()
+		Else
+			oText = oDoc.getText()
+		End If
+		oCursor = oText.createTextCursor()
+		
+		' how does the next line have to work when there is no (bookmark) anchor?
+		If Not bPlaceAtBookMark Then
+			oCursor.gotoRange (oFound, FALSE)
+		Else
+			oCursor.gotoRange (oAnchor, FALSE)
+		End If
+	End If
+		
+' load picture in Document via separate function
+	sURL =  ConvertToURL( sGraphicFullName )
+	cUrl = LoadGraphicIntoDocument( oDoc, sURL, sGraphicFullName)	
+
+' 	oGraph = oDoc.createInstance("com.sun.star.drawing.GraphicObjectShape")
+ 	oGraph = oDoc.createInstance("com.sun.star.text.TextGraphicObject")
+
+	' check if name in document exists, and if so, adapt the new name
+	For i = 0 to ThisComponent.GetDrawpage.getCount -1
+		If ThisComponent.GetDrawpage.getByIndex(i).Name = sNameInDoc then 
+			sNameInDoc = sNameInDoc & "a"
+			Exit For
+		End If
+	Next
+' dirty: do it a second time too - if name exists, default name# is used, eg Afbeeldingen4
+	For i = 0 to ThisComponent.GetDrawpage.getCount -1
+		If ThisComponent.GetDrawpage.getByIndex(i).Name = sNameInDoc then 
+			sNameInDoc = sNameInDoc & "a"
+			Exit For
+		End If
+	Next
+	
+	If lWidth <> 0 AND lHeight <> 0 then bSetSize = True
+	If bSetSize Then
+		oSize = createUnoStruct( "com.sun.star.awt.Size" )
+		oSize.Width = lWidth
+		oSize.Height = lHeight
+	End If
+	With oGraph
+		.GraphicURL = cUrl
+		.AnchorType = com.sun.star.text.TextContentAnchorType.AT_PARAGRAPH '.AT_PARAGRAPH 'AS_CHARACTER
+		.Name = sNameInDoc
+'		.Title = "titel  via api"
+'		.Description = "beschrijving via api"
+	End With
+	
+	If bSetSize Then oGraph.size = oSize
+	
+' remove string found/in bookmark
+ 	oCursor.setString ("")
+	
+'now insert the image into the text document
+	oText.insertTextContent( oCursor, oGraph, False )
+ 	PlaceGraphicInTextDoc  = 1
+
+Exit Function
+ErrorHandler:
+	MyErrMessenger ("PlaceGraphicInTextDoc")
+	PlaceGraphicInTextDoc  = -1
+End Function
+
+'====================================================
+' Name        :  LoadGraphicIntoDocument
+' Description :  load graphic into this docs drawing doc and return url
+' Arguments   :
+' Returns     :  string, url to the internal resource
+'----------------------------------------------------
+Private Function LoadGraphicIntoDocument( oDoc As Object, cUrl$, cInternalName$) As String
+	Dim oBitmaps
+	Dim cNewUrl
+
+	oBitmaps = oDoc.createInstance( "com.sun.star.drawing.BitmapTable" )
+	If oBitmaps.hasByName(cInternalName) Then
+		' Bitmap already present
+		cNewUrl = oBitmaps.getByName( cInternalName )	
+	Else
+		' load bitmap
+		oBitmaps.insertByName( cInternalName, cUrl )
+	End If
+   
+   ' Get the Url that points to the graphic inside this document
+	cNewUrl = oBitmaps.getByName( cInternalName )
+   
+	LoadGraphicIntoDocument = cNewUrl
+End Function
+'====================================================
+' Name        :  MyErrMessenger
+' Description :  Displays message when error in function/procedure occurs
+' Arguments   :  string with name function/procedure
+' Returns     :  
+'----------------------------------------------------
+Sub MyErrMessenger (s$)
+	msgBox GetUIText("Gen_08a") & s & " :" & CHR(13) & CHR(13)_
+		& Error() & CHR(13) & GetUIText("Gen_08b") & Erl, 16, SMSGTITEL
+End Sub
+'-------------------------------------------------------------------------
+'=========================================================================
+' ©  Nou&Off     |    2012-05-04    |    ©  www.nouenoff.nl
+' Name        :  FileNotFoundMessage
+' Description :  Displays message when file not found
+' Arguments   :  string with name file
+' Returns     :  
+'-------------------------------------------------------------------------
+Sub FileNotFoundMessage(sfile$, optional sPath$)
+	Dim s$
+	
+	If not IsMissing(sPath) Then
+		s = GetUIText("Gen_09a") & chr(13) & GetUIText("Gen_09b") & sFile & GetUIText("Gen_09c") & chr(13) &_
+		sPath & chr(13) & GetUIText("Gen_09e")
+	Else
+		s = GetUIText("Gen_09a") & chr(13) & GetUIText("Gen_09b") & sFile & GetUIText("Gen_09d") & chr(13) &_
+		sPath & chr(13) & GetUIText("Gen_09e")
+	End If
+	msgBox s, 16, SMSGTITEL
+	
+End Sub
+'====================================================
+' Name        :  VariousErrorMessage
+' Description :  Displays various error messages
+' Arguments   :  string with name file, and type for icon
+' Returns     :  
+'----------------------------------------------------
+Sub VariousErrorMessage(s$, nType&, optional nLongMessage%)
+	Dim sMsg$
+On Error goto ErrorHandler
+
+	If nLongMessage = 1 then 'NOT bWithoutContact Then
+		sMsg = s & chr(13) & chr(13) & GetUIText("Gen_10")
+	Else
+		sMsg = s & chr(13) 
+	End If
+	msgBox sMsg, nType, SMSGTITEL
+	
+Exit Sub	
+ErrorHandler:
+	MyErrMessenger ("VariousErrorMessage")
+End Sub
+'====================================================
+' Name        :  ListAllBookmarksInDocument
+' Description :  put list of bookmarks at cursor pos
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub Helper_ListAllBookmarksInDocument
+	Dim oBookMarks,  oCursor
+	Dim i%
+	Dim s$
+	Dim sSeparator$
+	
+	sSeparator = ";" 'Chr(13) ' or ";" '
+
+	oBookMarks = thisComponent.getBookmarks()
+	For i = 0 to oBookMarks.Count -1
+		s = s & oBookMarks.getByIndex(i).name & sSeparator' ";"
+	Next
+	
+	oCursor = ThisComponent.getCurrentController.getViewCursor()
+	oCursor.String = s
+
+End Sub
+'====================================================
+' Name        :  Helper_FillBookMarks
+' Description :  fill multiple boommarks with same string
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub Helper_FillBookMarks
+	Dim sArrayNames() as String
+	Dim n%, nRslt%
+	Dim sFillWith$
+	
+	sFillWith = "  "
+	sArrayNames() = Array("KopjeDatum", "KopjeBetreft", "KopjeUwKenmerk", "KopjeOnsKenmerk")
+	For n = 0 to uBound(sArrayNames())
+		nRslt = FillMyBookmark (ThisComponent, sArrayNames(n), sFillWith) 
+	Next
+End Sub
+

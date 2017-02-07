@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="PrintDlg" dlg:left="65" dlg:top="55" dlg:width="146" dlg:height="96" dlg:closeable="true" dlg:moveable="true">
+ <dlg:styles>
+  <dlg:style dlg:style-id="0" dlg:border="0xffd320"/>
+ </dlg:styles>
+ <dlg:bulletinboard>
+  <dlg:button dlg:id="cmdOK" dlg:tab-index="3" dlg:left="101" dlg:top="58" dlg:width="41" dlg:height="14" dlg:default="true" dlg:value="~OK" dlg:button-type="ok"/>
+  <dlg:button dlg:id="cmdCancel" dlg:tab-index="4" dlg:left="101" dlg:top="74" dlg:width="41" dlg:height="14" dlg:value="~Annuleer" dlg:button-type="cancel"/>
+  <dlg:img dlg:style-id="0" dlg:id="imgLogo" dlg:tab-index="6" dlg:left="114" dlg:top="10" dlg:width="26" dlg:height="29" dlg:src="file:///home/cono/Documenten/DATA/Nou&amp;Off/Projecten/EigenProjecten/NeoHs/Bouwen/plaatjes_icoontjes/mail_64x64.bmp"/>
+  <dlg:radiogroup>
+   <dlg:radio dlg:id="optPDF" dlg:tab-index="0" dlg:left="10" dlg:top="37" dlg:width="78" dlg:height="13" dlg:value="Als PDF" dlg:checked="true"/>
+   <dlg:radio dlg:id="optODF" dlg:tab-index="1" dlg:left="10" dlg:top="53" dlg:width="78" dlg:height="13" dlg:value="Als ODF"/>
+   <dlg:radio dlg:id="optMS" dlg:tab-index="2" dlg:left="10" dlg:top="69" dlg:width="78" dlg:height="12" dlg:value="Als MS .doc"/>
+  </dlg:radiogroup>
+  <dlg:titledbox dlg:id="fraFiletype" dlg:tab-index="5" dlg:left="5" dlg:top="20" dlg:width="88" dlg:height="69">
+   <dlg:title dlg:value="Bestandstype"/>
+  </dlg:titledbox>
+ </dlg:bulletinboard>
+</dlg:window>

@@ -1,0 +1,85 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Option Explicit
+
+Public POOoLanguage$ ' language of OOo, for messages to the user
+Public POOoCountry$ ' country of OOo, for messages to the user
+
+Sub Main
+StrtDocKeuzeVenster
+'StartEditingDoc
+'	POOoLanguage = "en" : msgBox GetUIText("Dia_01")
+End Sub
+
+'====================================================
+' Name        :  SetPublicVarOOoLanguage
+' Description :  language for messages etc.
+' Arguments   :  interger preventing direct calling
+' Returns     :  string
+'----------------------------------------------------
+Sub SetPublicVarOOoLanguage (n%)
+  Dim oSet, oConfigProvider
+  Dim oParm(0) As New com.sun.star.beans.PropertyValue
+  Dim sProvider$, sAccess$, OOoLangue$
+
+  sProvider = "com.sun.star.configuration.ConfigurationProvider"
+  sAccess   = "com.sun.star.configuration.ConfigurationAccess"
+  oConfigProvider = createUnoService(sProvider)
+  oParm(0).Name = "nodepath"
+  oParm(0).Value = "/org.openoffice.Setup/L10N"
+  oSet = oConfigProvider.createInstanceWithArguments(sAccess, oParm())
+
+	' Dim aLocale as New com.sun.star.lang.Locale	/ 	aLocale = GetStarOfficeLocale() (from tools library) does it as well
+  OOoLangue = oSet.getbyname("ooLocale")
+' trick to create for exmaple nl_NL from the ooLocale tha only offers nl
+  POOoLanguage = Lcase(Left(trim(OOoLangue),2))
+  POOoCountry = UCase(Right(trim(OOoLangue),2))
+' this to be able to pass nl and NL in the next function
+' later on, this turned out not to be necessary (see comment on service StringResourceWithLocation, later on)
+  
+End Sub
+
+' Reads (translated) strings for UI from <installpath>/language/
+' https://github.com/qt-haiku/LibreOffice/blob/master/offapi/com/sun/star/resource/StringResourceWithLocation.idl
+Function GetUIText(s$) as String
+	Dim sServiceName$, sBaseName$, sURL$
+	Dim aLocale as New com.sun.star.lang.Locale
+	Dim oInteractionHandler as Object
+	Dim aArguments() as Variant
+	Dim oComponentContext, oMultiComponentFactory, oSRWL
+	Dim sMessage$
+	Dim sIDs() as String
+
+	sServiceName = "com.sun.star.resource.StringResourceWithLocation"
+	sBaseName = "dlg_msg_texts"
+	
+	sURL = GetExtensionInstallationDir 
+	If sURL = "" then sURL = SDEVELOPPATH_PSEUDOEXTENSION_VARIOUS
+	sURL = PreserveEndSlash(sURL) & "language/"
+	
+	If POOoLanguage = "" then SetPublicVarOOoLanguage(1)
+	aLocale.Language = POOoLanguage
+	aLocale.Country = POOoCountry
+		
+	aArguments = Array(sURL, TRUE, aLocale, sBaseName, "", oInteractionHandler)
+	oComponentContext = GetDefaultContext()
+	oMultiComponentFactory = oComponentContext.getServiceManager()
+
+	' StringResourceWithLocation does have a default Locale as fallback
+	oSRWL = oMultiComponentFactory._
+				createInstanceWithArgumentsAndContext(sServiceName, aArguments, oComponentContext)
+	sIDs = oSRWL.getResourceIDs()
+	
+On Error goto ErrorNoSuchString
+	GetUIText = oSRWL.resolveString(s) '"hello_world")
+On Error goto 0
+
+Exit Function
+ErrorNoSuchString:
+	GetUIText = "? " & s &  " ?"
+End Function
+

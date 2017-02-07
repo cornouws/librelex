@@ -1,0 +1,551 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Option Explicit
+
+Sub Main
+Dim TimeStrt as Long, TimeEnd as Long
+
+TimeStrt = getSystemTicks
+SetGlobalVars
+TimeEnd = getSystemTicks
+msgbox Cstr((TimeEnd - TimeStrt)/100)
+End Sub
+
+'====================================================
+' Name        :  PlaceTheFile
+' Description :  
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub PlaceTheFile
+	Dim bPDF as Boolean
+	Dim bODF as Boolean
+	Dim bMS as Boolean
+	Dim sFileExtension$, sSaveURL$, sOrigURL$
+	Dim oDoc, oDocFrame, oDispatcher
+	Dim Array()
+	Dim nRslt%
+	Dim args(1) As New com.sun.star.beans.PropertyValue
+
+On Error GoTo ErrorHandler
+
+	oDispatcher = createUnoService("com.sun.star.frame.DispatchHelper")
+	oDocFrame = ThisComponent.CurrentController.Frame
+	oDoc = ThisComponent
+
+	sFileExtension = lCase(PoAnyDlg.GetControl("lblCurrentType").getText)
+	If ThisComponent.HasLocation() Then
+		sOrigURL = ThisComponent.getLocation
+	End If
+	sSaveURL = PoAnyDlg.GetControl("txtLocal").getText' & "." & sFileExtension 
+	
+	bPDF = PoAnyDlg.GetControl("chkPDF").getState
+	bODF = PoAnyDlg.GetControl("chkODF").getState
+	bMS = PoAnyDlg.GetControl("chkMS").getState
+
+	' TODO - check if target file already exists ?
+	' TODO - option to set overwriting existing or not ?
+	args(0).Name = "Overwrite"
+'	args(0).Value = "True"
+	args(0).Value = "False"
+
+	If bPDF Then
+		PlaatjesWelAfdrukken
+		' TODO4Customer later choice for .uno:ExportToPDF, so with options dialog?
+		oDispatcher.executeDispatch(oDocFrame, ".uno:ExportToPDF", "", 0, Array())
+		PlaatjesNietAfdrukken
+	End If
+
+	If bODF Then
+		' check sFileExtension - take first three to allow for docx, xlsx, pptx ;-)	
+		If Left(sFileExtension, 3) = "doc" OR sFileExtension = "odt" Then 
+			args(1).Name = "FilterName"
+			args(1).Value = "writer8"
+			sSaveURL = sSaveURL  & ".odt"
+		ElseIf Left(sFileExtension, 3) = "xls" OR sFileExtension = "ods" Then
+			args(1).Name = "FilterName"
+			args(1).Value = "calc8"
+			sSaveURL = sSaveURL  & ".ods"
+		ElseIf Left(sFileExtension, 3) = "ppt" OR sFileExtension = "odp" Then
+			args(1).Name = "FilterName"
+			args(1).Value = "impress8"
+			sSaveURL = sSaveURL  & ".odp"
+		ElseIf sFileExtension = "odg" Then 
+			args(1).Name = "FilterName"
+			args(1).Value = "draw8"
+			sSaveURL = sSaveURL  & ".odg"
+		End If		
+	End If
+	
+	If bMS Then
+		' check sFileExtension - take first three to allow for docx, xlsx, pptx ;-)
+		If Left(sFileExtension, 3) = "doc" OR sFileExtension = "odt" Then 
+			args(1).Name = "FilterName"
+			args(1).Value = "MS Word 97"
+			sSaveURL = sSaveURL  & ".doc"
+		ElseIf Left(sFileExtension, 3) = "xls" OR sFileExtension = "ods" Then
+			args(1).Name = "FilterName"
+			args(1).Value = "MS Excel 97"
+			sSaveURL = sSaveURL  & ".xls"
+		ElseIf Left(sFileExtension, 3) = "ppt" OR sFileExtension = "odp" Then
+			args(1).Name = "FilterName"
+			args(1).Value = "MS Powerpoint 97"
+			sSaveURL = sSaveURL  & ".ppt"
+		Else
+		End If		
+	End If
+	
+On Error GoTo ErrorHandlerStoring
+	oDoc.storeToUrl(sSaveURL,args())
+On Error GoTo ErrorHandler
+
+	
+Exit Sub
+ErrorHandlerStoring:
+
+	If sOrigURL = sSaveURL then
+		msgbox( sSaveURL & GetUIText("Sav_04", 64, SMSGTITEL ))
+	Else
+		VariousErrorMessage(GetUIText("Sav_01") & Chr(13) & GetUIText("Sav_01a") & Chr(13) & GetUIText("Sav_01b") & Chr(13) & GetUIText("Sav_01c"), 48)	
+	End If
+
+Exit Sub
+ErrorHandler:
+	msgBox Error() & CHR(13) & Erl, 16, SMSGTITEL
+End Sub
+'====================================================
+' Name        :  GetDocumentPlaceLocation
+' Description :  
+' Arguments   :  document
+' Returns     :  -
+'----------------------------------------------------
+Sub GetDocumentPlaceLocation(oDoc)
+	Dim sDocPath$, sFileName$, sFileExtension$, sSaveURL$, s$
+	Dim nRslt%, l%, m%
+	Dim args(1) As New com.sun.star.beans.PropertyValue
+
+On Error GoTo ErrorHandler
+	
+	If ThisComponent.HasLocation() Then
+		sDocPath = ThisComponent.getLocation
+		' get name and path
+		nRslt = GivePathAndNameOfFile(sDocPath, sFileName, sSaveURL)
+	Else
+		' Get the default name/location for the document
+		sSaveURL = GiveThisDocsDefaultPath()
+		sFileName = GiveThisDocsDefaultName()
+	End If
+
+	nRslt = GiveNameAndSeparateExtension(sFileName, sFileExtension)
+
+	sSaveURL = GetNameUsingFilePicker(sSaveURL, sFileName)
+	If len(sSaveURL) > 0 Then
+		args(0).Name = "Overwrite"
+		args(0).Value = "False"
+On Error GoTo ErrorHandlerStoring
+		oDoc.storeAsUrl(sSaveURL,args())
+On Error GoTo ErrorHandler
+	End If
+	
+Exit Sub
+ErrorHandlerStoring:
+	VariousErrorMessage(GetUIText("Sav_01") & Chr(13) & GetUIText("Sav_01a") & Chr(13) & GetUIText("Sav_01b") & Chr(13) & GetUIText("Sav_01c"), 48)	
+
+Exit Sub
+ErrorHandler:
+	MyErrMessenger("GetDocumentPlaceLocation")	
+End Sub
+'====================================================
+' Name        :  GetFileExtensionFromFileType
+' Description :  returns file type of active document
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Function GetFileExtensionFromFileType as String
+
+On Error GoTo ErrorHandler
+
+	With ThisComponent
+		If .SupportsService("com.sun.star.text.TextDocument") Then
+			GetFileExtensionFromFileType = "odt"
+		ElseIf .SupportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+			GetFileExtensionFromFileType = "ods"
+		ElseIf .SupportsService("com.sun.star.presentation.PresentationDocument") Then
+			GetFileExtensionFromFileType = "odp"
+		ElseIf .SupportsService("com.sun.star.drawing.DrawingDocument") Then
+			GetFileExtensionFromFileType = "odg"
+		Else
+		End If
+	End With
+	
+Exit Function
+ErrorHandler:
+	MyErrMessenger("GetFileExtensionFromFileType ")	
+End Function
+'====================================================
+' Name        :  GiveNameAndSeparateExtension
+' Description :  separate name and extenstion
+' Arguments   :  name and extenstion
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function GiveNameAndSeparateExtension(byRef sFileName$, byRef sFileExtension$) As Integer
+	Dim i%
+	Dim sTmp$, s$
+	Dim sSprtr$
+	
+On Error GoTo ErrorHandler
+	
+	If Trim(sFileName) = "" Then
+		GiveNameAndSeparateExtension = -2
+		Exit Function
+	End If
+	
+	sSprtr = "."
+	sTmp = sFileName
+	s = sFileName
+
+    i = InStr(1, s, sSprtr)    
+    Do While i > 0
+        s = Right(s, Len(s) - i)
+        i = InStr(1, s, sSprtr)
+    Loop
+    
+    sFileExtension = s
+    sFileName = left(sTmp, len(sTmp)-len(s) -1)
+    GiveNameAndSeparateExtension = 1
+    Exit Function
+    
+ErrorHandler:    
+    GiveNameAndSeparateExtension = -1
+End Function
+'====================================================
+' Name        :  GivePathAndNameOfFile
+' Description :  separate path and name
+' Arguments   :  path and name
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Function GivePathAndNameOfFile(sSaveURL$, byRef sFileName$, byRef sDocPath$) As Integer
+	Dim i%
+	Dim sTmp$, s$
+	Dim sSprtr$
+	
+On Error GoTo ErrorHandler
+
+	s = sSaveURL
+	sTmp = sSaveURL
+	sSprtr = "/"
+	
+    i = InStr(1, s, sSprtr)    
+    Do While i > 0
+        s = Right(s, Len(s) - i)
+        i = InStr(1, s, sSprtr)
+    Loop
+    
+    sFileName = s
+    sDocPath = left(sTmp, len(sTmp)-len(s))
+    
+    GivePathAndNameOfFile = 1
+    Exit Function
+    
+ErrorHandler:    
+    GivePathAndNameOfFile = -1
+End Function
+'====================================================
+' Name        :  DoesThisFileExist
+' Description :  
+' Arguments   :  full filename
+' Returns     :  boolean
+'----------------------------------------------------
+Function DoesThisFileExist(s$) As Boolean
+    If Dir(s) <> "" Then
+        DoesThisFileExist = True
+    Else
+        DoesThisFileExist = False
+    End If
+End Function
+
+sub testSTC
+	SaveThisDocument(ThisComponent)
+end sub
+'====================================================
+' Name        :  SaveThisDocument
+' Description :  Handle naming and saving of huisstijl doc, uses Save-dialog
+' Arguments   :  Document
+' Returns     :  
+'----------------------------------------------------
+Sub SaveThisDocument(oDoc)
+	Dim sDocPath$, sFileName$, sSaveURL$, s$
+	Dim nRslt%, l%, m%
+	Dim args(1) As New com.sun.star.beans.PropertyValue
+
+On Error GoTo ErrorHandler
+
+	' Get the default name/location for the documents
+	sDocPath = GiveThisDocsDefaultPath()
+	sFileName = GiveThisDocsDefaultName()
+
+	sSaveURL = GetNameUsingFilePicker(sDocPath, sFileName)
+	If len(sSaveURL) = 0 Then Exit Sub
+
+	args(0).Name = "Overwrite"
+	args(0).Value = "False"
+	args(1).Name = "FilterName"
+
+' http://opengrok.libreoffice.org/xref/core/officecfg/registry/data/org/openoffice/TypeDetection/UISort.xcu
+	Select Case Right (sSaveURL, 4)
+	Case ".doc"
+		args(1).Value = "MS Word 97"
+ 	Case ".xls"
+		args(1).Value = "MS Excel 97"
+ 	Case ".ppt"
+		args(1).Value = "MS Powerpoint 97"
+	Case "docx"
+		args(1).Value = "MS Word 2007 XML"
+ 	Case "xlsx"
+		args(1).Value = "Calc MS Excel 2007 XML"
+ 	Case "pptx"
+		args(1).Value = "Impress MS Powerpoint 2007 XML"
+	End Select
+
+' 28-1-09, versie 0.9.6
+On Error GoTo ErrorHandlerStoring
+	oDoc.storeAsUrl(sSaveURL,args())
+On Error GoTo ErrorHandler
+	' option
+	' now update counter
+	'WriteOndtVolgNr
+
+Exit Sub
+ErrorHandlerStoring:
+	VariousErrorMessage(GetUIText("Sav_01") & Chr(13) & GetUIText("Sav_01a") & Chr(13) & GetUIText("Sav_01b") & Chr(13) & GetUIText("Sav_01c"), 48)	
+
+Exit Sub
+ErrorHandler:
+	MyErrMessenger("SaveThisDocument")	
+End Sub
+'====================================================
+' Name        :  GiveThisDocsDefaultPath
+' Description :  Give default path for Huisstijl doc
+' Arguments   :  May use document type from cdp, and global vars
+' Returns     :  String
+'----------------------------------------------------
+Function GiveThisDocsDefaultPath () as String
+	Dim s$
+	
+On Error GoTo ErrorHandler
+
+	' first try path for doctype
+	If uBound(PsCurrentDocSrtName()) > 0 Then
+		If Trim(PsCurrentDocSrtName(1)) <> "" Then s = Trim(PsCurrentDocSrtName(1))
+	End If
+		
+	If s = "" Then
+		If PsCustomfilesPath <> "" Then
+			'  then the general path 
+			s = PsCustomfilesPath
+		Else
+		 	'and if all fails, just this one
+			s = GetItemsInstallPath("work")
+		End If
+	End If
+	
+	GiveThisDocsDefaultPath = s
+	
+Exit Function
+ErrorHandler:
+	MyErrMessenger("GiveThisDocsDefaultPath")	
+End Function
+'====================================================
+' Name        :  GiveThisDocsDefaultName
+' Description :  Give default name for Huisstijl doc
+' Arguments   :  May use document type from cdp, other cdp's, global vars, and values from ini-files
+' Returns     :  String
+'----------------------------------------------------
+Function GiveThisDocsDefaultName () as String
+	Dim s$, sName$
+	Dim i%, n%
+	
+On Error GoTo ErrorHandler
+
+	' PsCurrentDocSrtName has not been loaded, error in config?
+	If uBound(PsCurrentDocSrtName()) < 1 then Exit Function
+	
+	For i = 2 to uBound(PsCurrentDocSrtName()) 
+		' 0 = doc name, 1 = path
+		n = cInt(Trim(PsCurrentDocSrtName(i)))
+		s = ""
+		If n > 0 Then
+			' if it is a number, it points to the value of the corresponding field
+			' prevent crash when number in ini-file is too high
+			If Not (n-1 > Ubound(PsCurrentDocSrtNameData() )) Then
+				s = PsCurrentDocSrtNameData(n -1) ' the ini file starts counting at 1, the array index at 0
+			End If
+		Else
+			' now its just a string component
+			s = PsCurrentDocSrtName(i)
+			' use document name for 'DocName'
+			If s = "DocName" Then s = PsCurrentDocSrtName(0)
+		End If
+
+		If sName <> "" Then
+			sName = sName & s
+		Else
+			sName = s
+		End If
+	Next
+	
+	' TODO4Customer possible options: allow
+	' - PsOndtData(11,1) = user initials
+	' - date as GiveYYYYMMDDatum
+	
+	GiveThisDocsDefaultName = sName
+
+Exit Function
+ErrorHandler:
+	MyErrMessenger("GiveThisDocsDefaultName")	
+End Function
+'====================================================
+' Name        :  GetNameUsingFilePicker
+' Description :  Show file picker dialog to let user choose full name
+' Arguments   :  sDocPath en sFileName
+' Returns     :  String
+'----------------------------------------------------
+Function GetNameUsingFilePicker (sDocPath$, sFileName$, optional bDlgPlace as Boolean) as String
+	Dim sTitle$
+	Dim oFilePickerDlg
+	Dim sFilePickerArgs
+	Dim sFilesPicked () as String
+	Dim bUseDlgPlace as Boolean ' to evaluate the optional boolean argument
+'	Dim Array()
+
+	On Error GoTo ErrorHandler
+			
+	If PbThisIsHuisstijlDoc Then
+		sTitle = GetUIText("Sav_02")
+	Else
+		sTitle = GetUIText("Sav_03")
+	End If
+
+	oFilePickerDlg = createUnoService( "com.sun.star.ui.dialogs.FilePicker" )
+' issue with this ??
+' https://bz.apache.org/ooo/show_bug.cgi?id=123544#c18
+
+	
+	If not IsMissing(bDlgPlace) Then
+		If bDlgPlace = True then bUseDlgPlace = True
+	End If
+	
+	If bUseDlgPlace Then
+		sFilePickerArgs = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_SIMPLE ) 'FILESAVE_AUTOEXTENSION_PASSWORD )
+		With oFilePickerDlg
+			.Initialize ( sFilePickerArgs() )
+			.setTitle(sTitle)
+			If Len(sDocPath) > 0 Then .SetDisplayDirectory (ConvertToURL(sDocPath))
+			If Len(sFileName) > 0 Then .SetDefaultName (sFileName)
+'			.SetCurrentFilter( "OpenDocument Text (.odt)" )
+'			.SetValue(com.sun.star.ui.dialogs.ExtendedFilePickerElementIds.CHECKBOX_AUTOEXTENSION, 0, true)   
+'			.SetValue(com.sun.star.ui.dialogs.ExtendedFilePickerElementIds.CHECKBOX_PASSWORD, 0, false)
+'	        .EnableControl(com.sun.star.ui.dialogs.ExtendedFilePickerElementIds.CHECKBOX_PASSWORD, false)
+	        .EnableControl(com.sun.star.ui.dialogs.CommonFilePickerElementIds.LISTBOX_FILTER, false)
+		End With	 
+	Else
+		sFilePickerArgs = Array(com.sun.star.ui.dialogs.TemplateDescription.FILESAVE_AUTOEXTENSION_PASSWORD )
+	
+		With oFilePickerDlg
+			.Initialize ( sFilePickerArgs() )
+			.setTitle(sTitle)
+			If Len(sDocPath) > 0 Then .SetDisplayDirectory (ConvertToURL(sDocPath))
+			If Len(sFileName) > 0 Then .SetDefaultName (sFileName)
+
+			Select Case PsDocType
+			Case "all"
+				If PbAllowOldMsFormats Then
+					.AppendFilter( "OpenDocument Text (.odt)", "*.odt" )
+					.AppendFilter( "Microsoft Word 97/2000/XP (.doc)", "*.doc" )
+					.AppendFilter( "Microsoft Word 2007-2013 XML (.docx)", "*.docx" )
+					.AppendFilter( "OpenDocument Spreadsheet (.ods)", "*.ods" )
+					.AppendFilter( "Microsoft Excel (.xls)", "*.xls" )
+					.AppendFilter( "Microsoft Excel 2007-2013 XML (.xlsx)", "*.xlsx" )
+					.AppendFilter( "OpenDocument Presentation (.odp)", "*.odp" )
+					.AppendFilter( "Microsoft Powerpoint (.ppt)", "*.ppt" )
+					.AppendFilter( "Microsoft Powerpoint 2007-2013 XML (.pptx)", "*.pptx" )
+					.AppendFilter( "OpenDocument Drawing (.odg)", "*.odg" )
+				Else
+					.AppendFilter( "OpenDocument Text (.odt)", "*.odt" )
+					.AppendFilter( "OpenDocument Spreadsheet (.ods)", "*.ods" )
+					.AppendFilter( "OpenDocument Presentation (.odp)", "*.odp" )
+					.AppendFilter( "OpenDocument Drawing (.odg)", "*.odg" )
+				End If
+				' get file format
+				Select Case UCase(PsDocSoortCurrent(2))
+				Case "ODF"
+					.SetCurrentFilter( "OpenDocument Text (.odt)" )
+				Case "MS97"
+					.SetCurrentFilter( "Microsoft Word 97/2000/XP (.doc)" )
+				Case "MS2007"
+					.SetCurrentFilter( "Microsoft Word 2007-2013 XML (.docx)" )
+				Case Else
+					.SetCurrentFilter( "OpenDocument Text (.odt)" )
+				End Select
+				
+			Case "ots"
+				.AppendFilter( "OpenDocument Spreadsheet (.ods)", "*.ods" )
+				If PbAllowOldMsFormats Then
+					.AppendFilter( "Microsoft Excel (.xls)", "*.xls" )
+					.AppendFilter( "Microsoft Excel 2007-2013 XML (.xlsx)", "*.xlsx" )
+				End If
+				' get file format
+				Select Case UCase(PsDocSoortCurrent(2))
+				Case "ODF"
+					.SetCurrentFilter( "OpenDocument Spreadsheet (.ods)" )
+				Case "MS97"
+					.SetCurrentFilter( "Microsoft Excel (.xls)" )
+				Case "MS2007"
+					.SetCurrentFilter( "Microsoft Excel 2007-2013 XML (.xlsx)" )
+				Case Else
+					.SetCurrentFilter( "OpenDocument Spreadsheet (.ods)" )
+				End Select
+
+			Case "otp"
+				.AppendFilter( "OpenDocument Presentation (.odp)", "*.odp" )
+				If PbAllowOldMsFormats Then
+					.AppendFilter( "Microsoft Powerpoint (.ppt)", "*.ppt" )
+					.AppendFilter( "Microsoft Powerpoint 2007-2013 XML (.pptx)", "*.pptx" )
+				End If
+				' get file format
+				Select Case UCase(PsDocSoortCurrent(2))
+				Case "ODF"
+					.SetCurrentFilter( "OpenDocument Presentation (.odp)" )
+				Case "MS97"
+					.SetCurrentFilter( "Microsoft Powerpoint (.ppt)" )
+				Case "MS2007"
+					.SetCurrentFilter( "Microsoft Powerpoint 2007-2013 XML (.pptx)" )
+				Case Else
+					.SetCurrentFilter( "OpenDocument Presentation (.odp)" )
+				End Select
+
+			Case "otg"
+				.AppendFilter( "OpenDocument Drawing (.odg)", "*.odg" )
+				.SetCurrentFilter( "OpenDocument Drawing (.odg)" )		
+			End Select
+			.SetValue(com.sun.star.ui.dialogs.ExtendedFilePickerElementIds.CHECKBOX_AUTOEXTENSION, 0, true)   
+			.SetValue(com.sun.star.ui.dialogs.ExtendedFilePickerElementIds.CHECKBOX_PASSWORD, 0, false)
+		End With
+	End If
+	
+
+	If oFilePickerDlg.execute() > 0 Then
+		sFilesPicked() = oFilePickerDlg.getFiles()
+		GetNameUsingFilePicker = sFilesPicked(0)
+	End If
+
+Exit Function
+ErrorHandler:
+	MyErrMessenger("GetNameUsingFilePicker")	
+End Function
+'----------------------------------------------------
+

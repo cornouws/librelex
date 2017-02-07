@@ -1,0 +1,458 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Option Explicit
+
+Dim PsLocationData as String
+
+Sub Main
+
+End Sub
+
+'====================================================
+' © Cor Nouws - Nou&Off
+' Name        :  FillThisDocData
+' Description :  Start filling document
+' Arguments   :  Document
+' Returns     :  -
+'----------------------------------------------------
+Sub FillThisDocData (oDoc)
+	Dim nRslt%
+	
+	PoDocDlg.setVisible(FALSE)
+
+	If PnCurrentLanguageNr = 0 Then LoadCurrentLanguageNumber
+	If PsCurrentLanguage = "" Then LoadCurrentLanguage 
+
+	If PbLocationsUsed Then
+		If PsCurrentLocation <> PoDocDlg.getControl(SLSTLOCATIONS).SelectedItem Then
+			PsCurrentLocation = PoDocDlg.getControl(SLSTLOCATIONS).SelectedItem
+			LoadCurrentLocationData
+			' write current location
+			WriteVarToOneLineIni(PsUserPath & PSCURRENTLOCATIONFILE, PsCurrentLocation)
+		ElseIf UBound(PsCurrentLocationData()) < 0 Then
+			LoadCurrentLocationData
+		End If
+	End If
+	
+	' Get all data for the controls (fields in dialog) and put in document
+	PlaceDlgDataInDoc(oDoc)
+	'write user data .. is loaded in dlg on initialization nex time
+	WriteDocUserData
+	' TODO4Customer WriteCurrentDocSrtReuseData
+	
+	If Not PbExistingDoc Then CUST_DocDocumentSpecificActions(oDoc)
+	
+	If oDoc.SupportsService("com.sun.star.presentation.PresentationDocument") Then
+		
+	ElseIf oDoc.SupportsService("com.sun.star.drawing.DrawingDocument") Then
+
+	ElseIf oDoc.SupportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+
+	Else
+		PlaceLanguageDependentLabelsInDoc(oDoc) 
+		' additional content for new documents
+		If Not PbExistingDoc Then
+
+			If PbLocationsUsed then PlaceLocationDataInDoc(oDoc)
+			If PbLanguagesUsed then SetLanguageForDocStyles
+			If PbLogosUsed = TRUE Then
+				' CUST_PlaceExtraLogoInDoc(oDoc)
+			End If
+			If PbSignedByUsed = TRUE Then
+				' CUST TODO
+			End If
+			If PbDataBaseUsed = TRUE Then
+				' CUST TODO
+			End If
+			If PbAutoTextUsed = TRUE Then
+				' CUST TODO
+			End If
+		End If		
+	End If
+
+End Sub
+'====================================================
+' Name        :  PlaceLocationDataInDoc
+' Description :  PlaceLocationDataInDoc
+' Arguments   :  doc
+' Returns     :  -
+'----------------------------------------------------
+Sub PlaceLocationDataInDoc(oDoc)
+	Dim s$, sLocation$
+	Dim sArrayLocation() as String, sArrayLocationData() as String
+	Dim nRslt%
+	
+	s = GetStringAfterSeparator (PsLocationBmAndValues, "=") 
+	sArrayLocation = split(s, ",")
+	If Ubound(sArrayLocation) > 0 Then sLocation = GetStringFromLocationDataArray(sArrayLocation, FALSE)
+	
+	s = GetStringAfterSeparator (PsLocationAddressBmAndValues, "=") 
+	sArrayLocationData = split(s, ",")
+	If Ubound(sArrayLocationData) > 0 Then PsLocationData = GetStringFromLocationDataArray(sArrayLocationData, FALSE)
+	If PnCurrentLanguageNr > 0 Then PsLocationData = PsLocationData & " " & PsCountryNameInternational
+
+	If oDoc.SupportsService("com.sun.star.presentation.PresentationDocument") Then
+		
+	ElseIf oDoc.SupportsService("com.sun.star.drawing.DrawingDocument") Then
+
+	ElseIf oDoc.SupportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+
+	Else
+		If PsLocationsNameBM <> "" Then nRslt = FillMyBookmark (ThisComponent, PsLocationsNameBM, PsCurrentLocation)
+		If Ubound(sArrayLocation) > 0 Then nRslt = FillMyBookmark (ThisComponent, sArrayLocation(0), sLocation)
+		If Ubound(sArrayLocationData) > 0 Then nRslt = FillMyBookmark (ThisComponent, sArrayLocationData(0), PsLocationData)
+	End If
+End Sub
+'====================================================
+' Name        :  GetStringFromLocationDataArray
+' Description :  
+' Arguments   :  -
+' Returns     :  string
+'----------------------------------------------------
+Function GetStringFromLocationDataArray(sArray(), bOneLine as Boolean) as String
+	Dim s$
+	Dim i%
+	
+	If uBound(sArray()) > 0 Then
+		For i = 1 to uBound(sArray()) ' skip 0, that is name
+			If s = "" then
+				s = PsCurrentLocationData(CInt(sArray(i)))
+			Else
+				If bOneLine Then
+					s = s & " " & PsCurrentLocationData(CInt(sArray(i)))
+				Else
+					s = s & Chr(13) & PsCurrentLocationData(CInt(sArray(i)))
+				End If
+			End If
+		Next
+	Else
+		s = " "
+	End If
+	GetStringFromLocationDataArray = s
+End Function
+
+'====================================================
+' Name        :  PlaceLanguageDependentLabelsInDoc
+' Description :  PlaceLanguageDependentLabelsInDoc
+' Arguments   :  doc; uses 'PsCurrentLanguage and PnCurrentLanguageNr
+' Returns     :  
+'----------------------------------------------------
+Sub PlaceLanguageDependentLabelsInDoc(oDoc)
+	Dim nRslt%, i%, j%
+	Dim sArray() as String
+	Dim sBM$, sValue$
+
+	For i = 1 to Ubound(PsCurrentDocSrtLabels()) ' skip first one, doctype
+		sArray () = split(PsCurrentDocSrtLabels(i),"=")
+		If Ubound(sArray()) > 0 Then
+			sBM = sArray(0)
+			' TODO bConditionally = sArray(1)
+			' sValue = sArray(PnCurrentLanguageNr + 2)
+			sValue = sArray(PnCurrentLanguageNr + 1)
+	
+			If oDoc.SupportsService("com.sun.star.presentation.PresentationDocument") Then
+				
+			ElseIf oDoc.SupportsService("com.sun.star.drawing.DrawingDocument") Then
+			
+			ElseIf oDoc.SupportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+			
+			Else
+				If PbConditionallyFillLabels Then
+					If Trim(ReadMyBookmark (oDoc, sBM)) = "" Then sValue = " "
+				End If
+				nRslt = FillMyBookmark (oDoc, PsBmLabelPrefix & sBM, sValue)
+			End If
+		End If
+	Next
+	
+End Sub
+'====================================================
+' Name        :  SetLanguageForDocStyles
+' Description :  Sets language of style Standard for spellchecking
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub SetLanguageForDocStyles
+	Dim oFamilies, oFamily, oStyle
+	Dim oLocale As New com.sun.star.lang.Locale
+	Dim s$
+	
+    Select Case PsCurrentLanguage
+    Case "Nederlands"
+        s ="nl"
+    Case "Engels"
+        s ="en"
+        oLocale.Country = "US"
+    Case "Duits"
+        s ="de"
+    Case "Frans"
+        s ="fr"
+	Case Else
+		' do nothing...
+    End Select
+	
+	oLocale.Language = s  ' fr, nl, en, de
+	oFamilies = ThisComponent.getStyleFamilies()	
+	oFamily = oFamilies.getByName ("ParagraphStyles")
+	If oFamily.hasByName ("Standard") Then
+		oStyle = oFamily.getByName ("Standard")
+		oStyle.setPropertyValue ("CharLocale", oLocale ) 			
+    End If
+	
+End Sub
+'====================================================
+' Name        :  PlaceDlgDataInDoc
+' Description :  Places data from dlg in document
+' Arguments   :  current document
+' Returns     :  
+'----------------------------------------------------
+Sub PlaceDlgDataInDoc (oDoc)
+	Dim s$, sLabel$, sType$, sCheckBoxNameBase$
+	Dim i%, j%, k%, nLines%, nResult%
+	Dim oSheet, oCell
+	Dim oGraph 
+	Dim sMissingLabels$
+	Dim bLabelNotFound as Boolean
+	Dim bWideBox as Boolean
+	
+	' use global var with names of bookmarks
+	' each item is present in dlg as txt<name> and in document as <name>
+
+	On Error GoTo ErrorHandler
+	
+	If UBound(PsDocSoortCurrent()) > NDOCDATAFLDSTART-1 Then
+		' save values in PsCurrentDocSrtNameData 
+		Redim PsCurrentDocSrtNameData(UBound(PsDocSoortCurrent()))
+		
+		For i = NDOCDATAFLDSTART to UBound(PsDocSoortCurrent())
+
+			If Trim(PsDocSoortCurrent(i)) = "" Then
+				' empty value, prolly the doc.ini has a ";" at end of line		
+			Else
+				' Determine label and type of control
+				DetermineControllsLabel_Lines_Type(PsDocSoortNew(i), sLabel, sType, nLines, bWideBox)
+	
+				If Left(PsDocSoortCurrent(i),4) = "STEP" OR Left(PsDocSoortCurrent(i),4) = "HSEP" Then
+					' skip!
+				ElseIf Left(PsDocSoortCurrent(i),6) = "COLUMN" Then
+					' skip!
+				ElseIf Right(PsDocSoortCurrent(i),3) = "..)" Then
+					' skip! - special field.
+				Else
+					If sType = "com.sun.star.awt.UnoControlEditModel" Then
+						s = PoDocDlg.getModel.getByName("txt" & sLabel).Text
+					ElseIf sType = "com.sun.star.awt.UnoControlListBoxModel" Then
+						s =  PoDocDlg.getControl("txt" & sLabel).getSelectedItem()
+					ElseIf sType = "com.sun.star.awt.UnoControlRadioButtonModel" Then
+						'TODO
+					ElseIf sType = "com.sun.star.awt.UnoControlCheckBoxModel" Then
+						' assumption: the label from the ini file has a space and the
+						' part up to the space is base of name for whatever action
+						'TODO
+					End If
+
+					If oDoc.SupportsService("com.sun.star.text.TextDocument") Then	
+						If sType = "com.sun.star.awt.UnoControlRadioButtonModel" Then
+							'TODO
+						ElseIf sType = "com.sun.star.awt.UnoControlCheckBoxModel" Then
+							' assumption: the label from the ini file has a space and the
+							' part up to the space is base of name for for bookmark
+							' and AutoText
+							'sCheckBoxNameBase = Left (sLabel, Instr(sLabel, " ")-1)
+							'If PoDocDlg.getControl("txt" & sLabel).State = 1 Then ' checked 
+							'	nResult = PlaceMyAutotext(SNAMEAUTOTEXTCATEGORY, sCheckBoxNameBase, "BM"& sCheckBoxNameBase)
+							'End If
+						Else ' edit or listbox
+							If FillMyBookmark (oDoc, sLabel, s)  = -1 Then
+								if sMissingLabels = "" then 
+									sMissingLabels = sLabel
+								Else
+									sMissingLabels = sMissingLabels & ", "& sLabel
+								End If
+							End If
+						End If
+						
+					ElseIf oDoc.SupportsService("com.sun.star.sheet.SpreadsheetDocument") Then
+						oSheet = ThisComponent.Sheets(0) 
+On Error GoTo ErrorRangeName
+					 	oCell = oSheet.getCellRangeByName(sLabel)
+On Error GoTo ErrorHandler				 
+						If not bLabelNotFound Then oCell.setString(s)
+						bLabelNotFound = False
+
+					' presentation documents support field for Title (footer) "Titel (Voettekst)" and objects on all pages, 
+					ElseIf oDoc.SupportsService("com.sun.star.presentation.PresentationDocument") Then
+						'OPTION
+						If LCase(sLabel) = "titel (voettekst)" OR LCase(sLabel) = "title-footer" then
+							s = PoDocDlg.getModel.getByName("txt" & sLabel).Text
+							
+							For j = 0 to oDoc.DrawPages.Count-1
+								ThisComponent.DrawPages.getByIndex(j).FooterText = s
+							Next
+						End If
+						' loop over all pages and all objects on each page to find sLabel
+						For j = 0 to oDoc.DrawPages.Count-1
+							For k = 0 to ThisComponent.getDrawPages().getByIndex(j).getCount -1
+								oGraph = ThisComponent.getDrawPages().getByIndex(j).getByIndex(k) 
+								If ucase(oGraph.name) = uCase(sLabel) Then
+									oGraph.string = s
+									Exit For
+								End if
+							Next
+							' do not step out this for loop, when oGraph if found; might be present on more pages
+						Next						
+					ElseIf oDoc.SupportsService("com.sun.star.drawing.DrawingDocument") Then
+						' loop over all pages and all objects on each page to find sLabel
+						For j = 0 to oDoc.DrawPages.Count-1
+							For k = 0 to ThisComponent.getDrawPages().getByIndex(j).getCount -1
+								oGraph = ThisComponent.getDrawPages().getByIndex(j).getByIndex(k) 
+								If ucase(oGraph.name) = uCase(sLabel) Then
+									oGraph.string = s
+									Exit For
+								End if
+							Next
+							' do not step out this for loop, when oGraph if found; might be present on more pages
+						Next						
+					End If
+					' save data from fields to use in document name later
+					PsCurrentDocSrtNameData(i) = s
+				' STEP
+				End If
+			End If
+		Next
+	' option
+	'SaveDocumentSpecificData(PoDocDlg.GetControl("lstDocSoorten").selectedItemPos)
+	End If	
+
+	If Not PbExistingDoc Then
+		If sMissingLabels <> "" Then
+			VariousErrorMessage(GetUIText("Doc_01") & Chr(13) & GetUIText("Doc_01a") & sMissingLabels, 48)
+		End If
+	End If
+		
+Exit Sub
+ErrorRangeName: 
+	if sMissingLabels = "" then 
+		sMissingLabels = sLabel
+	Else
+		sMissingLabels = sMissingLabels & ", "& sLabel
+	End If
+	bLabelNotFound = true
+	Resume Next
+
+ErrorHandler:	
+	MyErrMessenger ("PlaceDlgDataInDoc en met sLabel : " & sLabel & " ")
+End Sub
+'====================================================
+' Name        :  ReadDlgDataFromDoc
+' Description :  Reads data from bookmarks in document and places that in dlg
+'                Writer only
+' Arguments   :  string with 'field'-names of current document
+' Returns     :  
+'----------------------------------------------------
+Sub ReadDlgDataFromDoc (sDocData)
+	Dim oDoc
+	Dim sArray()
+	Dim sLabel$, s$, sType$, nLines$
+	Dim i%
+	Dim bWideBox as Boolean
+	
+	sArray = Split(sDocData, ";")
+	
+	oDoc = ThisComponent
+	If UBound(sArray) > NDOCDATAFLDSTART-1 Then
+		For i = NDOCDATAFLDSTART to UBound (sArray)
+
+			' check if there is an emty entry
+			If Trim(sArray(i)) = "" Then exit for
+
+			' Determine label and type of control
+			DetermineControllsLabel_Lines_Type(sArray(i), sLabel, sType, nLines, bWideBox)
+			' set false,  not needed here, stay safe..
+			bWideBox = False
+			' STEP
+			If Left(sArray(i), 4) = "STEP" OR Left(sArray(i),4) = "HSEP" Then
+				'skip
+			ElseIf Left(sArray(i),6) = "COLUMN" Then
+				' skip!
+			ElseIf Right(sArray(i),3) = "..)" Then
+				' skip!
+			Else
+			 	'text documents
+				s = ReadMyBookmark (oDoc, sLabel, s)
+				'spreadsheets  TODO
+				' s = ReadMyRange (oDoc, sLabel, s)
+				
+				If sType = "com.sun.star.awt.UnoControlEditModel" Then
+					PoDocDlg.GetControl("txt"& sLabel).Text = s			
+				ElseIf sType = "com.sun.star.awt.UnoControlListBoxModel" Then
+					PoDocDlg.GetControl("txt"& sLabel).selectItem (s, TRUE)
+				 ' skip checkboxes and option buttons
+				Else
+				End If
+			' STEP
+			End If
+		Next
+	End If
+End Sub
+'====================================================
+' Name        :  WriteCurrentDocSrtReuseData
+' Description :  Write user data for reuse
+' Arguments   :  -
+'----------------------------------------------------
+' TODO - make generic, use public var PsCurrentDocSrtReuseData
+Sub WriteCurrentDocSrtReuseData () ' not in use
+	Dim sArrayNames () as string
+	Dim n#
+	Dim sFile$
+
+On Error GoTo ErrorHandler
+	
+ 	Select Case PsDocSoortCurrent(0)  ' use public var PsCurrentDocSrtReuseData TODO
+		Case "brief"
+			' TODO4Customer use PsCurrentDocSrtReuseData()
+			sArrayNames = Array("Doorkiesnummer","E-mail","Naam ondertekenaar","Functie") 
+	End Select 
+
+'Adresregel tonen_C; blw Afzendgegevens
+'Paginering tonen_C; blw 
+'Voettekst tonen_C; blw 
+'Slagzin tonen_C; blw 
+
+	' write user data
+	If Not IsEmpty(sArrayNames()) Then
+		For n = 0 to uBound(sArrayNames())
+			If Trim(sArrayNames(n)) <> "" Then
+				UserIniInfo(n+1) = PoDocDlg.GetControl("txt" & sArrayNames(n)).Text
+			End If
+		Next	
+	End If
+	
+	' TODO - generic
+	'UserIniInfo(4) = oDialogModel.getByName("txtbxNaamOndertekenaar").Text
+'	sFile = URLUserInipad & UserFile
+'	WriteUserInfo(File)
+
+Exit Sub
+ErrorHandler:	
+	MyErrMessenger ("WriteCurrentDocSrtReuseData")
+End Sub
+'====================================================
+' Name        :  ReadCurrentDocSrtReuseData
+' Description :  Read user data for current docsoort to fill in dialog
+' Arguments   :  -
+'----------------------------------------------------
+Sub ReadCurrentDocSrtReuseData () ' not in use
+' TODO4Customer - make generic, use public var PsCurrentDocSrtReuseData
+On Error GoTo ErrorHandler
+
+
+Exit Sub
+ErrorHandler:	
+	MyErrMessenger ("ReadCurrentDocSrtReuseData")
+End Sub
+

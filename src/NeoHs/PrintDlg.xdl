@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="PrintDlg" dlg:left="65" dlg:top="55" dlg:width="162" dlg:height="97" dlg:closeable="true" dlg:moveable="true">
+ <dlg:styles>
+  <dlg:style dlg:style-id="0" dlg:border="0xffd320"/>
+ </dlg:styles>
+ <dlg:bulletinboard>
+  <dlg:button dlg:id="cmdOK" dlg:tab-index="3" dlg:left="115" dlg:top="58" dlg:width="41" dlg:height="14" dlg:default="true" dlg:value="~OK" dlg:button-type="ok"/>
+  <dlg:button dlg:id="cmdCancel" dlg:tab-index="4" dlg:left="115" dlg:top="74" dlg:width="41" dlg:height="14" dlg:value="~Annuleer" dlg:button-type="cancel"/>
+  <dlg:img dlg:style-id="0" dlg:id="imgLogo" dlg:tab-index="6" dlg:left="128" dlg:top="10" dlg:width="26" dlg:height="29" dlg:src="file:///home/cono/Documenten/DATA/Nou&amp;Off/Projecten/EigenProjecten/NeoHs/Bouwen/plaatjes_icoontjes/print_64x64.bmp"/>
+  <dlg:radiogroup>
+   <dlg:radio dlg:id="optStandard" dlg:tab-index="0" dlg:disabled="true" dlg:left="9" dlg:top="36" dlg:width="94" dlg:height="12" dlg:value="Standaard"/>
+   <dlg:radio dlg:id="optBlanc" dlg:tab-index="1" dlg:left="9" dlg:top="53" dlg:width="94" dlg:height="12" dlg:value="Blanco papier (print logo)" dlg:checked="true"/>
+   <dlg:radio dlg:id="OptionButton1" dlg:tab-index="7" dlg:left="65" dlg:top="76" dlg:width="2" dlg:height="0" dlg:value="OptionButton1"/>
+   <dlg:radio dlg:id="optLogo" dlg:tab-index="2" dlg:left="9" dlg:top="69" dlg:width="94" dlg:height="12" dlg:value="Logo papier (print geen logo)"/>
+  </dlg:radiogroup>
+  <dlg:titledbox dlg:id="fraPapertype" dlg:tab-index="5" dlg:left="5" dlg:top="20" dlg:width="104" dlg:height="69">
+   <dlg:title dlg:value="Papiersoort"/>
+  </dlg:titledbox>
+ </dlg:bulletinboard>
+</dlg:window>

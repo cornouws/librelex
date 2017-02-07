@@ -1,0 +1,67 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Public oLanguageListener
+
+Sub Main
+'Globalscope.BasicLibraries.LoadLibrary("XrayTool")
+StrtDockeuzeVenster
+End Sub
+
+'====================================================
+' Name        :  CreateLstLanguage_Listener
+' Description :  creates listener for dynamically created list languages
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub CreateLstLanguage_Listener
+  Dim sListenerName$
+  sListenerName = "com.sun.star.awt.XActionListener"
+'  sListenerName = "com.sun.star.lang.XEventListener"  ' raises error
+  oLanguageListener = CreateUnoListener("LstLanguage_", sListenerName)
+End Sub
+
+Sub LstLanguage_disposing (oEvent)
+End Sub
+Sub LstLanguage_actionPerformed (oEvent As com.sun.star.awt.ActionEvent)
+'msgbox "actionPerformed"
+	lstLanguage_Change
+End Sub
+Sub LstLanguage_itemStateChanged (oEvent As com.sun.star.awt.ItemEvent)
+	lstLanguage_Change
+'msgbox "itemStateChanged "
+End Sub
+Sub LstLanguage_focusGained (oEvent As com.sun.star.awt.FocusEvent)  'com.sun.star.lang.EventObject
+'msgbox "focusGained "
+End Sub
+Sub LstLanguage_focusLost (oEvent As com.sun.star.awt.FocusEvent)
+'msgbox "focusLost "
+End Sub
+Sub LstLanguage_keyPressed (oEvent As com.sun.star.awt.KeyEvent)
+'msgbox "keyPressed "
+End Sub
+Sub LstLanguage_keyReleased (oEvent As com.sun.star.awt.KeyEvent)
+'msgbox "keyReleased "
+End Sub
+Sub LstLanguage_mouseEntered (oEvent As com.sun.star.awt.MouseEvent)
+'msgbox "mouseEntered"
+End Sub
+Sub LstLanguage_mouseMovedKeyPressed (oEvent As com.sun.star.awt.MouseEvent)
+'msgbox "mouseMovedKeyPressed"
+End Sub
+Sub LstLanguage_mouseMoved (oEvent As com.sun.star.awt.MouseEvent)
+'msgbox "mouseMoved"
+End Sub
+Sub LstLanguage_mousePressed (oEvent As com.sun.star.awt.MouseEvent)
+'msgbox "mousePressed"
+End Sub
+Sub LstLanguage_mouseReleased (oEvent As com.sun.star.awt.MouseEvent)
+'msgbox "mouseReleased"
+End Sub
+Sub LstLanguage_mouseExited (oEvent As com.sun.star.awt.MouseEvent)
+'msgbox "mouseExited"
+End Sub
+

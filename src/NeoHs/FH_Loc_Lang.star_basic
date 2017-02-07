@@ -1,0 +1,88 @@
+REM  *****  BASIC  *****
+' ©  Cor Nouws, 2007-1016 -  Nou&Off - www.nouenoff.nl
+' version 1.3.0.1 - date 2016-06-10
+' this code is free open source software
+' released under GNU LESSER GENERAL PUBLIC LICENSE Version 3
+
+Sub Main
+
+End Sub
+
+'====================================================
+' Name        :  StartFillingLocationData
+' Description :  start function for location data CustDependent
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub StartFillingLocationData ()
+'	CUST_StartLocationDataDlg
+End Sub
+'====================================================
+' Name        :  LoadCurrentLocationData
+' Description :  
+' Arguments   :  -
+' Returns     :  1 if OK; -1 with Failure
+'----------------------------------------------------
+Sub LoadCurrentLocationData ()
+	Dim sLanguage$, sSection$
+	Dim sArray() as String
+	Dim i%
+	
+	sLanguage = " (" & PsCurrentLanguage & ")"
+	sSection = "[" & PsCurrentLocation & sLanguage & "]"
+	sArray = FillArrayFromOneSectionInFile (PsSettingsIniPath & PsLocationsFileName, sSection)
+
+	If uBound(sArray()) < 0 Then
+	' section not found - try without a language
+		sSection = "[" & PsCurrentLocation & "]"
+		sArray = FillArrayFromOneSectionInFile (PsSettingsIniPath & PsLocationsFileName, sSection)
+	End If
+	
+	If uBound(sArray()) < 0 Then
+	' section not found - take third one; first is 'general', second gives names
+		sArray = FillArrayFromSectionNInFile (PsSettingsIniPath & PsLocationsFileName, 3)
+	End If
+
+	Redim PsCurrentLocationData(Ubound(sArray()))
+	For i = 0 to Ubound(sArray())
+		PsCurrentLocationData(i) = GetStringAfterSeparator(sArray(i), "=") 
+	Next
+	
+End Sub
+'====================================================
+' Name        :  LoadCurrentLanguage
+' Description :  when PsCurrentLanguage is empty
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub LoadCurrentLanguage ()
+	Dim oCtrl
+	If isNull(PoDocDlg) Then
+		Msgbox "Only use ""LoadCurrentLanguage"" with docDialog active", SMSGTITEL
+		Exit Sub
+	End If
+	If UBound(PsCurrentDocSrtLanguages()) > 0 Then 'PbLanguagesUsed Then
+		oCtrl = PoDocDlg.getControl(SLSTLANGUAGES)
+		If Not IsNull(oCtrl) Then
+			PsCurrentLanguage = oCtrl.getSelectedItem()
+		Else
+			PsCurrentLanguage = PsCurrentDocSrtLanguages (0)
+		End If
+	End If
+End Sub
+'====================================================
+' Name        :  LoadCurrentLanguageNumber
+' Description :  when PnCurrentLanguageNr is 0
+' Arguments   :  -
+' Returns     :  -
+'----------------------------------------------------
+Sub LoadCurrentLanguageNumber ()
+	Dim i%
+
+	If PsCurrentLanguage = "" Then LoadCurrentLanguage
+	For i = 0 to uBound(PsAllLanguages())
+		if PsAllLanguages(i) = PsCurrentLanguage Then PnCurrentLanguageNr = i
+	Next
+	
+End Sub
+

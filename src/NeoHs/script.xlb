@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE library:library PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "library.dtd">
+<library:library xmlns:library="http://openoffice.org/2000/library" library:name="NeoHs" library:readonly="false" library:passwordprotected="false">
+ <library:element library:name="Starters"/>
+ <library:element library:name="General"/>
+ <library:element library:name="Doc"/>
+ <library:element library:name="Dialog"/>
+ <library:element library:name="Ondt"/>
+ <library:element library:name="Saving"/>
+ <library:element library:name="Print"/>
+ <library:element library:name="Language"/>
+ <library:element library:name="Dialog_Any"/>
+ <library:element library:name="FH_Loc_Lang"/>
+ <library:element library:name="Listnrs"/>
+ <library:element library:name="FH_Ini_Txt"/>
+ <library:element library:name="CUST_FUNCT_DUMMY"/>
+ <library:element library:name="FunctionsByOthers"/>
+</library:library>
