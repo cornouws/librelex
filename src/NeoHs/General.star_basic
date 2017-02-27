@@ -77,6 +77,12 @@ REM  *****  BASIC  *****
 ' 1.3.0.2
 ' 2017-02-05
 ' various small bugfixes
+' 
+' 1.3.0.3
+' 2017-02-10
+' fix for not properly refreshing dialog in all cases, tdf#105771
+'
+
 
 Option Explicit
 
@@ -148,7 +154,7 @@ Global Const SPRINTERININAME as String = "neohsprinter.ini"
 
 ' CONSTS VARIOUS
 ' = = = = = = = = = = = = =
-Public Const SVALUETESTENVIRON As String = ""  '"TEST"
+Public Const SVALUETESTENVIRON As String = "TEST"
 
 ' CONSTS FOR PATHS
 ' = = = = = = = = = = = = =
@@ -691,7 +697,7 @@ On Error GoTo ErrorHandler
 	End If
 
 	' = = get current language from PSCURRENTLANGUAGEFILE
-	' TODO make is possible to skip language file?
+	' TODO make it possible to skip language file?
 	PsCurrentLanguage = FillVarFromOneLineIni(PsUserPath & PSCURRENTLANGUAGEFILE)
 	If PsCurrentLanguage = "" Then
 		PsCurrentLanguage = PsAllLanguages(0)
@@ -720,7 +726,7 @@ End Function
 Function GetStringAfterSeparator (sToRead$, sSeparator$) as String
 	Dim s() as String
 	s() = Split(sToRead,sSeparator)
-	If uBound(s()) > -1 Then GetStringAfterSeparator = s(uBound(s())) 
+	If uBound(s()) > -1 Then GetStringAfterSeparator = s(uBound(s()))
 End Function
 '====================================================
 ' Name        :  GetURLorWORKorUSERPATH_AfterSeparator

@@ -864,6 +864,10 @@ Sub lstDocSoorten_Change ()
 		yPos = yPos + 5
 		yPosStart = yPos : yPosColumn1 = yPosStart: yPosColumn2 = yPosStart 
 	End If
+	' tdf#105771
+    with com.sun.star.awt.InvalidateStyle
+            PoDocDlg.getPeer().invalidate(.NOERASE)
+    end with
 
 	' place the controls for the fields/bookmarks
 	For i = NDOCDATAFLDSTART to UBound (PsDocSoortNew())
